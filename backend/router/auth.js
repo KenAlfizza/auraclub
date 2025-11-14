@@ -78,41 +78,25 @@ router.post('/tokens', async (req, res) => {
 router.post('/resets', authenticate, async (req, res) => {
     const utorid = req.body.utorid;
     if (!utorid) return res.status(400).json({ message: "utorid required" });
-    
+
     try {
-        // Find user 
-        const user = await prisma.user.findFirst({ where: { utorid } }); 
+        // Find user
+        const user = await prisma.user.findFirst({ where: { utorid } });
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Generate new token
-        const payload = {userId: user.id};
-        const token = jwt.sign(payload, 
-            process.env.JWT_SECRET, 
-            {expiresIn: '15m'});
-        const expiresAt = new Date(Date.now() + 1000 * 60 * process.env.JWT_RESET_EXPIRES_IN);
-        
-        await prisma.resetToken.upsert({ 
-            where : {
-                userId: user.id,
-            },
-            update: {
-                token: token,
-                expiresAt: expiresAt, 
-                used: false,
-            },
-            create: {  
-                token: token,
-                expiresAt: expiresAt,
-                used: false,
-                userId: user.id, 
-            }
-        });
+        // Call reset token service
+        const { createResetToken } = require("../services/resetTokenService");
+        const { token, expiresAt } = await createResetToken(user);
 
         // DEBUGGING
         console.log("ResetToken Decrypted:");
         console.log(jwt.verify(token, process.env.JWT_SECRET));
 
-        return res.status(202).json({"resetToken": token, "expiresAt": expiresAt.toISOString()})
+        return res.status(202).json({
+            resetToken: token,
+            expiresAt: expiresAt.toISOString(),
+        });
+
     } catch (err) {
         console.error("Error fetching user", err);
         return res.status(500).json({ message: "Internal server error" });

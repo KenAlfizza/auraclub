@@ -30,6 +30,10 @@ app.use(express.json());
 const authRouter = require('./router/auth');
 app.use('/auth', authRouter);
 
+// Router: Users
+const usersRouter = require('./router/users');
+app.use('/users', usersRouter);
+
 const server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
