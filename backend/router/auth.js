@@ -36,12 +36,13 @@ router.post('/tokens', async (req, res) => {
         }
         
         const match = await bcrypt.compare(password, user.password);
+        const currentDate = Date.now();
         if (match) {
             const payload = {userId: user.id, userRole: user.role};
             const token = jwt.sign(payload, 
                 process.env.JWT_SECRET, 
                 {expiresIn: `${process.env.JWT_EXPIRES_IN}h`});
-            const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * process.env.JWT_EXPIRES_IN).toISOString();
+            const expiresAt = new Date(currentDate + 1000 * 60 * 60 * process.env.JWT_EXPIRES_IN).toISOString();
 
             // Save token to prisma
             await prisma.loginToken.upsert({ 
@@ -61,6 +62,12 @@ router.post('/tokens', async (req, res) => {
             // DEBUGGING
             console.log("LoginToken Decrypted:");
             console.log(jwt.verify(token, process.env.JWT_SECRET));
+
+            // Update user lastLogin status
+            await prisma.user.update({
+                where: {id: user.id},
+                data: {lastLogin: new Date(currentDate)}
+            })
 
             return res.status(200).json({"token": token, "expiresAt": expiresAt});
 

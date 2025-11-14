@@ -25,12 +25,11 @@ async function main() {
 
     const superuser = {        
         utorid: utorid,    
-        username: 'superuser',
+        name: 'superuser',
         email: email,     
         password: passwordHashed,  
-        birthday: new Date(1999,1,1),  
-        role: 'superuser',      
-        createdAt: new Date(),
+        role: 'superuser',
+        verified: true,
     }
 
     await prisma.user.create({
