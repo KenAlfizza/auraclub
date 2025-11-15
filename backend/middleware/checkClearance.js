@@ -1,10 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-function clearanceCheck(minRole) { 
+function checkClearance(minRole) { 
     const roles = {'regular': 0, 'cashier': 1, 'manager': 2, 'superuser':3};
     return (req, res, next) => {
-        const userRole = req.user?.role;
+        const userRole = req.user.role;
         if (!userRole) {
             return res.status(401).json({'message': 'Unauthorized'});
         }
@@ -16,4 +16,4 @@ function clearanceCheck(minRole) {
     }
 
 }
-module.exports = clearanceCheck;
+module.exports = checkClearance;

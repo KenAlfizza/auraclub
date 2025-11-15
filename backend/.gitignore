@@ -4,3 +4,4 @@ node_modules
 prisma/dev*
 
 auraclub-backend.code-workspace
+uploads

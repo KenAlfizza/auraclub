@@ -38,8 +38,10 @@ model User {
   avatarUrl   String?                  
   
   role        RoleType       @default(regular)
-  
+  suspicious  Boolean        @default(false)
+
   points      Int            @default(0)
+
 
 
   loginToken  LoginToken?
