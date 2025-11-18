@@ -93,5 +93,7 @@ router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
   }
 });
 
+
+
 // TODO: Implement the rest of transaction later after you haave implemented the promotions
 module.exports = router;

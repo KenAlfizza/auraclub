@@ -158,13 +158,9 @@ router.get('/me', authenticate, checkClearance('regular'), async (req, res) => {
     try {
         const userMe = await prisma.user.findFirst({
             where: {id: userMeId},
-            // include: {
-            //     promotions: { 
-            //         where: {
-            //             userId: userMeId
-            //         }
-            //     }
-            // }
+            include: {
+                promotions: true,
+            }
         });
 
         if (!userMe) return res.status(404).json({message: "User not found"});
@@ -374,10 +370,9 @@ router.get('/:userId', authenticate, checkClearance('cashier'), async (req, res)
     try {
         const user = await prisma.user.findFirst({
             where: {id: userId},
-            // include: {
-            //     promotions: {
-            //     }
-            // }
+            include: {
+                promotions: true,
+            }
         });
         if (!user) {
             return res.status(404).json({message:'User is not found'})
