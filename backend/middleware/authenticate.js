@@ -30,7 +30,7 @@ async function authenticate(req, res, next) {
         });
         if (!user) return res.status(401).json({ message: 'Unauthorized' });
 
-        req.user = { id: user.id, role: user.role };
+        req.user = { id: user.id, role: user.role, verified: user.verified, points: user.points};
         // Go to next function
         next();
     } catch (err) {

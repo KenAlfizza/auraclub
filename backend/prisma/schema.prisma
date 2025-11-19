@@ -47,6 +47,7 @@ model User {
 
   transactions        Transaction[] @relation("UserTransactions")
   createdTransactions Transaction[] @relation("UserCreatedTransactions")
+  processedTransactions Transaction[] @relation("UserProcessedTransactions")
 
   promotions  Promotion[]
 
@@ -81,17 +82,19 @@ model Transaction {
   type          TransactionType
   amount        Int?
   spent         Float? 
+  redeemed      Int?
 
   suspicious    Boolean           @default(false)
   remark        String?
- 
 
   userId        Int
   createdById   Int
+  processedById Int?
 
   user          User              @relation("UserTransactions", fields: [userId], references: [id])
   createdBy     User              @relation("UserCreatedTransactions", fields: [createdById], references: [id])
-  
+  processedBy   User?             @relation("UserProcessedTransactions", fields: [processedById], references: [id])
+
   createdAt     DateTime          @default(now())
 }
 

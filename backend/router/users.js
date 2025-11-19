@@ -95,7 +95,18 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
 
     // Filter by verified
     if (req.query.verified !== undefined) {
-        attibuteComparisons.verified = req.query.verified === "true";
+        if (verified !== 'true' 
+        && verified !== true
+        && verified !== 'false'
+        && verified !== false) {
+            return res.status(400).json({ error: "verified must be a boolean value" });
+        }
+
+        if (verified !== 'true' || verified !== true) {
+            attibuteComparisons.verified = true;
+        } else {
+            attibuteComparisons.verified = false;
+        }
     }
 
     // Filter by activated (based on lastLogin)
@@ -360,6 +371,209 @@ router.patch('/me/password', authenticate, checkClearance('regular'), async (req
 
     } catch (err) {
         console.error('Error updating password', err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Create a new redemption transaction
+router.post('/me/transactions', authenticate, checkClearance('regular'), async (req, res) => {
+    const currentUser = req.user;
+    const type = req.body.type;
+    const amount = req.body.amount;
+    const remark = req.body.remark || "";
+    
+    // 403 Forbidden if the logged-in user is not verified
+    if (!currentUser.verified) {
+        return res.status(403).json({ message: "Forbidden" });
+    }
+
+    // Validate type: must be redemption
+    if (type !== undefined) {
+        if (type !== 'redemption') {
+            return res.status(400).json({message: "type must be redemption"})
+        }
+    } else {
+        return res.status(400).json({message: "type is required"})
+    }
+
+    // Validate amount
+    const amountNum = Number(amount);
+    if (amount !== undefined) {
+        if (isNaN(amountNum) || !Number.isInteger(amountNum) || amountNum < 0) {
+            return res.status(400).json({message: "amount must be a positive integer number"})
+        }
+    } else {
+        return res.status(400).json({message: "amount is required"})
+    }
+
+    // Create redemption transaction in prisma
+    try {
+        // 400 Bad Request if the requested amount exceeds user's point balance
+        if (currentUser.points < amount) {
+            return res.status(400).json({ message: "Insufficient points" });
+        }
+        const newTransaction = await prisma.transaction.create({
+            data: {
+                type: type,
+                amount: amount,
+                remark: remark,
+                user: { 
+                    connect: { id: currentUser.id }
+                },
+                createdBy: { 
+                    connect: { id: currentUser.id }
+                },
+            },
+            include: {
+            user: true,
+            createdBy: true
+        }
+        })
+        const result = {
+            id: newTransaction.id,
+            utorid: newTransaction.user.utorid,
+            type: newTransaction.type,
+            processedBy: newTransaction.processedBy,
+            amount: newTransaction.amount,
+            remark: newTransaction.remark,
+            createdBy: newTransaction.createdBy.utorid
+        }
+        return res.status(201).json(result);
+    } catch (err) {
+        console.error('Error creating redemption transaction', err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Retrieve a list of transactions owned by the currently logged in user
+router.get("/me/transactions", authenticate, checkClearance('regular'), async (req, res) => {
+    const type = req.query.type;
+    const relatedId = req.query.relatedId;
+    const promotionId = req.query.promotionId;
+    const amount = req.query.amount;
+    const operator = req.query.operator;
+    const page = req.query.page;
+    const limit = req.query.limit;
+
+    const filterBy = {
+        userId: req.user.id  // Only get transactions for the current user
+    };  
+
+    // Validate type - must be a valid transaction type if provided
+    if (type !== undefined) {
+        const validTypes = ['adjustment', 'transfer', 'redemption', 'event', 'purchase'];
+        if (!validTypes.includes(type.toLowerCase())) {
+            return res.status(400).json({ error: "type must be one of: adjustment, transfer, redemption, event, purchase" });
+        }
+        filterBy.type = type;
+    }
+
+    // Validate relatedId - must be used with type
+    if (relatedId !== undefined && !type) {
+        return res.status(400).json({ error: "relatedId must be used with type" });
+    }
+
+    // Validate relatedId - must be a valid number if provided
+    if (relatedId !== undefined) {
+        const relatedIdNum = Number(relatedId);
+        if (isNaN(relatedIdNum) || !Number.isInteger(relatedIdNum) || relatedIdNum < 0) {
+            return res.status(400).json({ error: "relatedId must be a valid positive integer" });
+        }
+        filterBy.relatedId = relatedIdNum;
+    }
+
+    // For promotionId filter - check if promotion is in array
+    if (promotionId !== undefined) {
+        const promotionIdNum = Number(promotionId);
+        if (isNaN(promotionIdNum) || !Number.isInteger(promotionIdNum) || promotionIdNum < 0) {
+            return res.status(400).json({ error: "promotionId must be a valid positive integer" });
+        }
+        filterBy.promotionIds = { has: promotionIdNum };
+    }
+
+    // Validate amount - must be used with operator
+    if (amount !== undefined && !operator) {
+        return res.status(400).json({ error: "amount must be used with operator" });
+    }
+
+    // Validate operator - must be used with amount
+    if (operator !== undefined && amount === undefined) {
+        return res.status(400).json({ error: "operator must be used with amount" });
+    }
+
+    // Validate operator - must be 'gte' or 'lte' if provided
+    if (operator !== undefined && operator !== 'gte' && operator !== 'lte') {
+        return res.status(400).json({ error: "operator must be either 'gte' or 'lte'" });
+    }
+
+    // Handle amount with operator (validate and set together)
+    if (amount !== undefined) {
+        const amountNum = Number(amount);
+        if (isNaN(amountNum)) {
+            return res.status(400).json({ error: "amount must be a valid number" });
+        }
+        
+        if (operator === 'gte') {
+            filterBy.amount = { gte: amountNum };
+        } else if (operator === 'lte') {
+            filterBy.amount = { lte: amountNum };
+        }
+    }
+
+    // Validate page - must be a valid positive integer if provided
+    let pageNum = 1; // default
+    if (page !== undefined) {
+        pageNum = Number(page);
+        if (isNaN(pageNum) || !Number.isInteger(pageNum) || pageNum < 1) {
+            return res.status(400).json({ error: "page must be a positive integer (minimum 1)" });
+        }
+    }
+
+    // Validate limit - must be a valid positive integer if provided
+    let limitNum = 10; // default
+    if (limit !== undefined) {
+        limitNum = Number(limit);
+        if (isNaN(limitNum) || !Number.isInteger(limitNum) || limitNum < 1) {
+            return res.status(400).json({ error: "limit must be a positive integer (minimum 1)" });
+        }
+    }
+
+    // Pagination
+    const skip = (pageNum - 1) * limitNum;
+    const take = limitNum;
+
+    // Fetch transactions
+    try {
+        // Prisma transaction to get count and paginated results
+        const [count, transactions] = await prisma.$transaction([
+            prisma.transaction.count({ where: filterBy }),
+            prisma.transaction.findMany({
+                where: filterBy,
+                skip,
+                take,
+                include: {
+                    user: true,           // Include user (customer)
+                    createdBy: true       // Include creator (cashier/manager)
+                }
+            }),
+        ]);
+
+        const results = transactions.map(transaction => ({
+            id: transaction.id,
+            type: transaction.type,
+            ...(transaction.spent && { spent: transaction.spent }),
+            amount: transaction.amount,
+            ...(transaction.relatedId && { relatedId: transaction.relatedId }),
+            promotionIds: transaction.promotionIds,
+            remark: transaction.remark,
+            createdBy: transaction.createdBy.utorid
+        }));
+
+        // Respond with count and results
+        return res.json({ count, results });
+
+    } catch (err) {
+        console.error('Error fetching transactions', err);
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
