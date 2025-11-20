@@ -1,0 +1,52 @@
+import { Link } from "react-router-dom";
+
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuTrigger,
+  NavigationMenuContent
+} from "@/components/ui/navigation-menu";
+
+export function Header() {
+  return (
+      <div className="flex bg-white-100 h-24">
+        <div className="mr-auto w-48 m-4">
+            <img src="/src/assets/auraclub_logo.svg" className="max-w-xs w-full h-auto"/>
+        </div>
+        <div className="flex ml-auto m-4 gap-4">
+            <NavigationMenu>
+                <NavigationMenuItem className="hidden md:block">
+                <NavigationMenuTrigger className="text-lg">Regular</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                        <ul className="grid w-[200px] gap-2 p-4">
+                            <li>
+                                <NavigationMenuLink asChild>
+                                <Link to="#">Regular</Link>
+                                </NavigationMenuLink>
+                            </li>
+                            <li>
+                                <NavigationMenuLink asChild>
+                                <Link to="#">Cashier</Link>
+                                </NavigationMenuLink>
+                            </li>
+                            <li>
+                                <NavigationMenuLink asChild>
+                                <Link to="#">Manager</Link>
+                                </NavigationMenuLink>
+                            </li>
+                            </ul>
+                    </NavigationMenuContent>
+                </NavigationMenuItem>
+            </NavigationMenu>
+
+            <div className=" w-16 mr-4">
+                <img src="/src/assets/react.svg" className="max-w-xs w-full h-auto"/>
+            </div>
+            
+        </div>
+      </div>
+  );
+}
+
+export default Header

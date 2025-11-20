@@ -18,15 +18,28 @@ export function UserProvider({ children }) {
 
 
     // Getters
+    const getUserUtorid = userUtorid
+    const getUserName = userName
+    const getUserEmail = userEmail
+    const getUserBirthday = userBirthday
     const getUserRole = userRole
-    const getUserPoint = userPoints
+    const getUserPoints = userPoints
+    const getUserCreatedAt = userCreatedAt
+    const getUserLastLogin = userLastLogin
+    const getUserVerified = userVerified
 
-    
 
     // "Public interface"
     const value = {
+        getUserUtorid,
+        getUserName,
+        getUserEmail,
+        getUserBirthday,
         getUserRole,
-        getUserPoint,
+        getUserPoints,
+        getUserCreatedAt,
+        getUserLastLogin,
+        getUserVerified,
     }
 
     // Public interface
@@ -35,4 +48,12 @@ export function UserProvider({ children }) {
             {children}
         </UserContext.Provider>
     )
+}
+
+export function useUser() {
+  const context = useContext(UserContext)
+  if (!context) {
+    throw new Error('useUser must be used within UserProvider')
+  }
+  return context
 }

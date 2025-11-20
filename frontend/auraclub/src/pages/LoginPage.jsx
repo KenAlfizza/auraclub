@@ -1,21 +1,21 @@
+import Layout from "./Layout"
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <Layout>
         <Card className="w-full max-w-sm">
         <CardHeader>
-            <img src="/src/assets/auraclub_logo.svg" class="block mx-auto scale-90" />
+            <img src="/src/assets/auraclub_logo.svg" className="block mx-auto scale-90" />
         </CardHeader>
         <CardContent>
             <form>
@@ -45,12 +45,12 @@ export function LoginPage() {
             </form>
         </CardContent>
         <CardFooter className="flex-col gap-2">
-            <Button type="submit" className="w-full">
+            <Button type="submit">
             Login
             </Button>
         </CardFooter>
         </Card>
-    </div>
+    </Layout>
   )
 }
 
