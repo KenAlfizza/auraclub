@@ -11,9 +11,6 @@ import {
 export function Header() {
   return (
       <div className="flex bg-white-100 h-24">
-        <div className="mr-auto w-48 m-4">
-            <img src="/src/assets/auraclub_logo.svg" className="max-w-xs w-full h-auto"/>
-        </div>
         <div className="flex ml-auto m-4 gap-4">
             <NavigationMenu>
                 <NavigationMenuItem className="hidden md:block">
@@ -41,7 +38,9 @@ export function Header() {
             </NavigationMenu>
 
             <div className=" w-16 mr-4">
-                <img src="/src/assets/react.svg" className="max-w-xs w-full h-auto"/>
+                <Link to="/profile">
+                    <img src="/src/assets/react.svg" className="max-w-xs w-full h-auto"/>
+                </Link>
             </div>
             
         </div>

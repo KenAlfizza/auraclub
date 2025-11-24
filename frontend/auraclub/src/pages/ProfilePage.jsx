@@ -1,6 +1,7 @@
 import Layout from "./Layout";
-import { Header } from "@/components/ui/header";
+import { Header } from "@/components/app/app-header";
 import { Label } from "@/components/ui/label";
+import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +13,18 @@ import {
 } from "@/components/ui/card"
 
 export function ProfilePage() {
+    const {
+        getUserUtorid,
+        getUserName,
+        getUserEmail,
+        getUserBirthday,
+        getUserRole,
+        getUserPoints,
+        getUserCreatedAt,
+        getUserLastLogin,
+        getUserVerified
+    } = useUser()
+
   return (
     <Layout header={<Header />}>
         <div className="flex-row w-full max-w-xl">
@@ -22,9 +35,9 @@ export function ProfilePage() {
                     </CardHeader>
                     <CardContent className="flex gap-8">
                         <div>
-                            <img src="\src\assets\react.svg" class="w-32"/>
+                            <img src="\src\assets\react.svg" className="w-32"/>
                         </div>
-                        <div className="flex-row">
+                        <div className="flex flex-row gap-8">
                             <div className="flex-1 flex-col gap-8">
                                 <div>
                                 <Label htmlFor="utorid">UTORID</Label>
@@ -43,10 +56,10 @@ export function ProfilePage() {
                                 </div>
                             </div>
                             <div className="flex-1 flex-col gap-8">
-                                <div></div>
-                                <div></div>
-                                <div></div>
-                                <div></div>
+                                <div>{getUserUtorid}</div>
+                                <div>{getUserName}</div>
+                                <div>{getUserEmail}</div>
+                                <div>{getUserBirthday}</div>
                             </div>
                         </div>
                     </CardContent>
@@ -60,7 +73,7 @@ export function ProfilePage() {
                     </CardHeader>
                     <CardContent className="flex justify-center">
                         <div>
-                            <Label className="text-3xl" htmlFor="role">Manager</Label>
+                            <Label className="text-3xl" htmlFor="role">{getUserRole}</Label>
                         </div>
                     </CardContent>
                 </Card>
@@ -71,13 +84,16 @@ export function ProfilePage() {
                     </CardHeader>
                     <CardContent className="flex-col justify-center">
                         <div>
-                            <Label htmlFor="verified">Verified</Label>
+                            <Label htmlFor="verified"> Verified: {getUserVerified ? "Yes" : "No"}</Label>
+                        </div>
+                        <div>
+                            <Label htmlFor="lastlogin">Created At: {String(getUserCreatedAt).split('T')[0]}</Label>
+                        </div>
+                        <div>
+                            <Label htmlFor="lastlogin">Last Login: {String(getUserLastLogin).split('T')[0]}</Label>
                         </div>
                         <div>
                             <Label htmlFor="changepassword">Change Password</Label>
-                        </div>
-                        <div>
-                            <Label htmlFor="lastlogin">Last Login</Label>
                         </div>
                     </CardContent>
                 </Card>
@@ -87,4 +103,4 @@ export function ProfilePage() {
   );
 }
 
-export default ProfilePage()
+export default ProfilePage

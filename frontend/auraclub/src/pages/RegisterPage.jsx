@@ -1,3 +1,7 @@
+import { useNavigate } from "react-router-dom"
+import { useState } from "react"
+import { useUser } from "@/context/UserContext"
+
 import Layout from "./Layout"
 
 import { Button } from "@/components/ui/button"
@@ -12,14 +16,44 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export function RegisterPage() {
-  return (
+    const navigate = useNavigate()
+
+    const {register, loading, error} = useUser()
+
+    const [utorid, setUtorid] = useState('')
+    const [name, setName] = useState('')
+    const [email, setEmail] = useState('')
+    const [registerError, setRegisterError] = useState('')
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        setRegisterError('')
+
+        console.log('Form submitted!')
+        
+        // Basic validation
+        if (!utorid || !name || !email) {
+            setRegisterError('Please fill in all fields')
+            return
+        }
+
+        try {
+            await register(utorid, name, email)
+            // Register successful, redirect to profile
+            navigate('/profile')
+        } catch (err) {
+            setRegisterError(err.message || 'Register failed. Please check the credentials.')
+        }
+    }
+
+    return (
     <Layout>
         <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
             <CardTitle>Register a new user</CardTitle>
         </CardHeader>
         <CardContent>
-            <form>
+            <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
                 <div className="grid gap-2">
                     <Label htmlFor="utorid">UTORID</Label>
@@ -27,6 +61,11 @@ export function RegisterPage() {
                         id="utorid"
                         type="utorid"
                         placeholder="johndoe1"
+                        onChange={(e) => {
+                            console.log('Utorid changed:', e.target.value)
+                            setUtorid(e.target.value)
+                        }}
+                        disabled={loading}
                         required
                     />
                 </div>
@@ -36,6 +75,11 @@ export function RegisterPage() {
                         id="name"
                         type="name"
                         placeholder="John Doe"
+                        onChange={(e) => {
+                            console.log('Name changed:', e.target.value)
+                            setName(e.target.value)
+                        }}
+                        disabled={loading}
                         required
                     />
                 </div>
@@ -45,18 +89,20 @@ export function RegisterPage() {
                         id="email"
                         type="email"
                         placeholder="johndoe1@mail.utoronto.ca"
+                        onChange={(e) => {
+                            console.log('Email changed:', e.target.value)
+                            setEmail(e.target.value)
+                        }}
+                        disabled={loading}
                         required
                     />
                 </div>
             </div>
+                <Button type="submit">
+                Register
+                </Button>
             </form>
         </CardContent>
-        <CardFooter className="flex-col gap-2">
-            <Button type="submit"
-                className="w-full border border-[#6EB8D4] bg-[#6EB8D4] text-white rounded hover:bg-[#558FA5] transition-colors duration-200">
-                Register
-            </Button>
-        </CardFooter>
         </Card>
     </Layout>
   )

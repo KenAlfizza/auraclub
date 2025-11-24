@@ -1,5 +1,9 @@
 import React from "react";
 
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app/app-sidebar"
+
+
 const Layout = ({ children, header }) => {
   return (
     <div className="min-h-screen flex flex-col">
@@ -7,9 +11,12 @@ const Layout = ({ children, header }) => {
       {header && <div>{header}</div>}
 
       {/* Main content */}
-      <main className="flex-1 flex justify-center items-center p-6 bg-gray-100">
-        {children}
-      </main>
+      <SidebarProvider>
+        <AppSidebar />
+        <main className="flex-1 flex justify-center items-center p-6 bg-gray-100">
+          {children}
+        </main>
+      </SidebarProvider>  
 
       {/* Footer */}
       <footer className="bg-gray-800 text-white p-4 text-center">
