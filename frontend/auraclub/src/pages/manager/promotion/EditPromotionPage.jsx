@@ -34,7 +34,7 @@ import {
 
 export function EditPromotionPage() {
     const navigate = useNavigate();
-    const { promotion, setPromotion, createPromotion, loading, error } =
+    const { promotion, setPromotion, patchPromotion, loading, error } =
         usePromotion();
 
     const handleChange = (e) => {
@@ -48,9 +48,9 @@ export function EditPromotionPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-        await createPromotion();
-        alert("Promotion created successfully!");
-        navigate("/dashboard");
+            await patchPromotion(promotion.id, { ...promotion });
+            alert("Promotion edited successfully!");
+            navigate("/dashboard");
         } catch (err) {
             console.error(err);
         }
@@ -75,7 +75,7 @@ export function EditPromotionPage() {
     return (
         <Layout header={<Header />}>
             <div className="flex flex-col w-full h-full gap-4">
-                <Label className="text-2xl">Edit Promotion #ID</Label>
+                <Label className="text-2xl">Edit Promotion #{promotion.id}</Label>
                 <Card className="w-full pt-4">
                 <CardContent>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -122,7 +122,7 @@ export function EditPromotionPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="automatic">Automatic</SelectItem>
-                                <SelectItem value="one-time">One Time</SelectItem>
+                                <SelectItem value="onetime">One Time</SelectItem>
                             </SelectContent>
                             </Select>
 
@@ -282,6 +282,7 @@ export function EditPromotionPage() {
                         type="submit"
                         className="bg-[#86D46E]"
                         disabled={loading}
+                        // onClick={() => handleEditPromotion}
                     >
                         {loading ? "Saving..." : "Save"}
                     </Button>

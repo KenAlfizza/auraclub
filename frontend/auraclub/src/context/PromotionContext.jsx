@@ -39,7 +39,7 @@ export function PromotionProvider({ children }) {
                 promotion.points
             );
             console.log('Promotion created successfully:', result);
-            // Optionally reset the promotion form
+            // Reset the promotion form
             setPromotion({
                 name: null,
                 description: null,
@@ -53,9 +53,8 @@ export function PromotionProvider({ children }) {
             });
             return result;
         } catch (err) {
-            console.error('Failed to create promotion:', err);
-            setError(err.message || 'Something went wrong');
-        throw err; // rethrow if you want calling components to handle it
+            setError(err.message || 'Failed to create promotion');
+            throw err;
         } finally {
             setLoading(false);
         }
@@ -66,12 +65,13 @@ export function PromotionProvider({ children }) {
         setLoading(true)
         setError(null)
         try {
-            const data = await promotionAPI.getAll(query) // data has {count, results}
-            setPromotions(data.results || []) // use results array
+            const data = await promotionAPI.getAll(query)
+            setPromotions(data.results || [])
             setPromotionsCount(data.count || 0)
             return data
         } catch (err) {
-            setError(err.message || "Failed to load promotions");
+            setError(err.message || "Failed to patch promotion");
+            throw err;
         } finally {
             setLoading(false)
         }
@@ -88,11 +88,43 @@ export function PromotionProvider({ children }) {
             return (data)
         } catch (err) {
             setError(err.message || "Failed to load promotion")
+            throw err
         } finally {
             setLoading(false)
         }
     }
-    
+
+    // Function to delete promotions based on id
+    const deletePromotion = async (id) => {
+        setLoading(true)
+        setError(null)
+         try {
+            await promotionAPI.delete(id)
+            console.log("Promotion context is deleted:", promotion.name)
+            return
+        } catch (err) {
+            setError(err.message || "Failed to load promotion")
+            throw err
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Funcion to patch the promotion
+    const patchPromotion = async (id, data) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await promotionAPI.patch(id, data);
+            return response;
+        } catch (err) {
+            setError(err.message || "Failed to patch promotion");
+            throw err
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <PromotionContext.Provider
@@ -103,6 +135,8 @@ export function PromotionProvider({ children }) {
             setPromotion,
             createPromotion,
             fetchPromotion,
+            deletePromotion,
+            patchPromotion,
             fetchPromotions,
             loading,
             error,
@@ -114,5 +148,4 @@ export function PromotionProvider({ children }) {
 
 }
 
-// Custom hook to use promotion context
 export const usePromotion = () => useContext(PromotionContext);

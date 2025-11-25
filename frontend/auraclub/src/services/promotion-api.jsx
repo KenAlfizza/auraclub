@@ -1,16 +1,26 @@
 const API_BASE_URL = 'http://localhost:3000'
 
 const handleResponse = async (response) => {
-  // Parse JSON body
-  const data = await response.json()
-  
-  // Check if request was successful
-  if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`)
-  }
-  
-  return data
+    let data = null;
+
+    try {
+        data = await response.json();
+    } catch (err) {
+        data = null;
+    }
+
+    // If response is not OK → throw error
+    if (!response.ok) {
+        const message =
+            data?.message ||
+            data?.error ||
+            `HTTP error! status: ${response.status}`;
+        throw new Error(message);
+    }
+
+    return data;
 }
+
 function getAuthHeaders() {
   const token = localStorage.getItem('token')
   return {
@@ -66,17 +76,43 @@ export const promotionAPI = {
 
     // Retrieve a single promotion with id
     get: async (id) => {
-        console.log('promotionAPI.getId called:', `${API_BASE_URL}/promotions/${id}`)
+        console.log('promotionAPI.get called:', `${API_BASE_URL}/promotions/${id}`)
         const response = await fetch(
-          `${API_BASE_URL}/promotions/${id}`,
-          {
-              method: "GET",
-              headers: getAuthHeaders(),
-          }
+            `${API_BASE_URL}/promotions/${id}`,
+            {
+                method: "GET",
+                headers: getAuthHeaders(),
+            }
         )
         const data = await handleResponse(response)
         console.log('Fetch complete, promotion:', data)
         return data
-    }
+    },
+
+    delete: async(id) => {
+        console.log('promotionAPI.delete called:', `${API_BASE_URL}/promotions/${id}`)
+        const response = await fetch(
+            `${API_BASE_URL}/promotions/${id}`,
+            {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+            }
+        )
+        return handleResponse(response);
+    },
+
+    patch: async (id, data) => {
+        const url = `${API_BASE_URL}/promotions/${id}`;
+        console.log("promotionAPI.edit called:", url);
+
+        const response = await fetch(url, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data),
+        });
+
+        return handleResponse(response);
+    },
+
 
 }

@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 export function ViewPromotionPage() {
     const navigate = useNavigate();
     const { id } = useParams(); // Get promotion ID from URL
-    const { fetchPromotion } = usePromotion();
+    const { fetchPromotion, deletePromotion } = usePromotion();
     
     const [promotion, setPromotionState] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -64,19 +64,15 @@ export function ViewPromotionPage() {
                 setLoading(false);
             }
         };
-
         loadPromotion();
     }, [id]);
 
     const handleDeletePromotion = async () => {
         setIsDeleting(true);
         try {
-            // Add your delete API call here
-            // await deletePromotion(id);
+            // Delete promotion API
+            await deletePromotion(id);
             console.log("Deleting promotion:", id);
-            
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Navigate back after successful deletion
             navigate("/manage/promotions/all");
@@ -103,7 +99,10 @@ export function ViewPromotionPage() {
                         </Label>
                     </div>
                     <div className="flex flex-row gap-2">
-                        <Button className="bg-white text-black hover:bg-green-400">
+                        <Button 
+                            className="bg-white text-black hover:bg-green-400"
+                            onClick={() => navigate(`/manage/promotions/edit/${promotion.id}`)}
+                        >
                             <Edit/>
                         </Button>
 

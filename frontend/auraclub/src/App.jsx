@@ -55,7 +55,7 @@ function App() {
       />
 
       <Route
-        path="/manage/promotions/edit"
+        path="/manage/promotions/edit/:id"
         element={
           <PromotionProvider>
             <EditPromotionPage />
