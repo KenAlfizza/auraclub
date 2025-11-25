@@ -1,5 +1,5 @@
 import Layout from "./Layout";
-import { Header } from "@/components/app/app-header";
+import { Header } from "@/components/app/appHeader";
 import { Label } from "@/components/ui/label";
 import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";

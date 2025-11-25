@@ -32,7 +32,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-export function CreatePromotionPage() {
+export function EditPromotionPage() {
     const navigate = useNavigate();
     const { promotion, setPromotion, createPromotion, loading, error } =
         usePromotion();
@@ -75,8 +75,7 @@ export function CreatePromotionPage() {
     return (
         <Layout header={<Header />}>
             <div className="flex flex-col w-full h-full gap-4">
-                <Label className="text-2xl">Create Promotion</Label>
-
+                <Label className="text-2xl">Edit Promotion #ID</Label>
                 <Card className="w-full pt-4">
                 <CardContent>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -284,7 +283,7 @@ export function CreatePromotionPage() {
                         className="bg-[#86D46E]"
                         disabled={loading}
                     >
-                        {loading ? "Creating..." : "Create"}
+                        {loading ? "Saving..." : "Save"}
                     </Button>
                     <Button
                         onClick={() => navigate("/dashboard")}
@@ -301,4 +300,4 @@ export function CreatePromotionPage() {
     );
 }
 
-export default CreatePromotionPage;
+export default EditPromotionPage;

@@ -1,5 +1,5 @@
 import Layout from "./Layout"
-import Header from "@/components/app/app-header"
+import Header from "@/components/app/appHeader"
 import { useUser } from "@/context/UserContext"
 import { useState } from "react"
 
@@ -18,7 +18,7 @@ export function DashboardPage() {
         getUserPoints
     } = useUser()
 
-    const [dashboardRole, setDashboardRole] = useState('manager')
+    const [dashboardRole, setDashboardRole] = useState('regular')
 
 
     const date = new Date();
@@ -33,65 +33,69 @@ export function DashboardPage() {
     if (dashboardRole === "regular") {
         return (
             <Layout header={<Header />}>
-                <div className="flex w-full gap-4">
-                    <div className="flex-1 flex flex-col gap-4">
-                    <div>
-                        <Card
-                            className="bg-blue-300 text-white flex flex-col justify-between w-full h-64 cursor-pointer hover:bg-blue-400 transition-colors duration-200"
-                            onClick={() => {
-                                console.log("Card clicked!");
-                                {/* Navigate to redeem point page */}
-                            }}>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Point Balance</CardTitle>
-                            </CardHeader>
+                <div className="flex flex-col w-full gap-4 h-full">
+                    <Label className="text-4xl">Hello!</Label>
 
-                            <CardContent>
-                                <Label className="text-7xl">{getUserPoints}</Label>
-                            </CardContent>
-
-                            <CardContent className="text-right">
-                                <Label className="text-sm">Redeem Points</Label>
-                            </CardContent>
-                        </Card>
-                    </div>
-                    <div>
-                        <Card className="w-full h-64 flex flex-col justify-between">
+                    <div className="flex-1 flex flex-row gap-4">
+                        <div className="flex-1 flex flex-col gap-4">
                             <div>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Available Promotions</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Label className="text-5xl">{/*getAvailablePromotions*/}</Label>
-                            </CardContent>
+                                <Card
+                                    className="bg-blue-300 text-white flex flex-col justify-between w-full h-64 cursor-pointer hover:bg-blue-400 transition-colors duration-200"
+                                    onClick={() => {
+                                        console.log("Card clicked!");
+                                        {/* Navigate to redeem point page */}
+                                    }}>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Point Balance</CardTitle>
+                                    </CardHeader>
+
+                                    <CardContent>
+                                        <Label className="text-7xl">{getUserPoints}</Label>
+                                    </CardContent>
+
+                                    <CardContent className="text-right">
+                                        <Label className="text-sm">Redeem Points</Label>
+                                    </CardContent>
+                                </Card>
                             </div>
-                            <CardContent className="text-right">
-                            <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200">
-                                View Promotions
-                            </Button>
-                            </CardContent>
-                        </Card>
+                            <div>
+                                <Card className="w-full h-64 flex flex-col justify-between">
+                                    <div>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Available Promotions</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Label className="text-5xl">{/*getAvailablePromotions*/}</Label>
+                                    </CardContent>
+                                    </div>
+                                    <CardContent className="text-right">
+                                    <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200">
+                                        View Promotions
+                                    </Button>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                        <div className="flex-1">
+                            <Card className="flex flex-col justify-between w-full min-h-[calc(16rem+16rem+1rem)]">
+                                <div>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Recent Transactions</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Label className="text-5xl">{/*getUserTransactions*/}</Label>
+                                </CardContent>
+                                </div>
+
+                                <CardContent className="text-right">
+                                <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200">
+                                    View Transactions
+                                </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
-                <div className="flex-1">
-                    <Card className="flex flex-col justify-between w-full h-full min-h-[calc(16rem+16rem+1rem)]">
-                        <div>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Recent Transactions</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Label className="text-5xl">{/*getUserTransactions*/}</Label>
-                        </CardContent>
-                        </div>
-
-                        <CardContent className="text-right">
-                        <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200">
-                            View Transactions
-                        </Button>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
         </Layout>
         )
     }

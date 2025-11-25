@@ -1,4 +1,6 @@
-import { Home, Users, BadgeDollarSign, SquarePercent, Calendar } from "lucide-react"
+import { Home, Coins } from "lucide-react"
+
+import { Users, BadgeDollarSign, SquarePercent, Calendar} from "lucide-react"
 import { Link } from "react-router-dom"
 
 import {
@@ -13,12 +15,37 @@ import {
 } from "@/components/ui/sidebar"
 
 // Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/dashboard",
-    icon: Home,
-  },
+const navigate_items = [
+    {
+      title: "Home",
+      url: "/dashboard",
+      icon: Home,
+    },
+
+    {
+      title: "Points",
+      url: "/dashboard",
+      icon: Coins,
+    },
+
+      {
+      title: "Transactions",
+      url: "#",
+      icon: BadgeDollarSign,
+    },
+    {
+      title: "Promotions",
+      url: "#",
+      icon: SquarePercent,
+    },
+    {
+      title: "Events",
+      url: "#",
+      icon: Calendar,
+    },
+]
+
+const manage_items = [
   {
     title: "Users",
     url: "#",
@@ -31,7 +58,7 @@ const items = [
   },
   {
     title: "Promotions",
-    url: "#",
+    url: "/manage/promotions",
     icon: SquarePercent,
   },
   {
@@ -51,10 +78,10 @@ export function AppSidebar() {
         </div>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigate</SidebarGroupLabel>
+          <SidebarGroupLabel>Manage</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {manage_items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>
