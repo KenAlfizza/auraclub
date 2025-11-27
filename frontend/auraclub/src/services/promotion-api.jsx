@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/api'
 
 const handleResponse = async (response) => {
     let data = null;
@@ -103,7 +103,7 @@ export const promotionAPI = {
 
     patch: async (id, data) => {
         const url = `${API_BASE_URL}/promotions/${id}`;
-        console.log("promotionAPI.edit called:", url);
+        console.log("promotionAPI.patch called:", url);
 
         const response = await fetch(url, {
             method: "PATCH",

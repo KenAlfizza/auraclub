@@ -45,14 +45,14 @@ export function LoginPage() {
     }
     
     return (
-    <Layout>
+        <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-sm">
         <CardHeader>
             <img src="/src/assets/auraclub_logo.svg" className="block mx-auto scale-90" />
         </CardHeader>
         <CardContent>
-            <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-2">
                 <div className="grid gap-2">
                 <Label htmlFor="utorid">UTORID</Label>
                 <Input
@@ -90,13 +90,16 @@ export function LoginPage() {
                 />
                 </div>
             </div>
-                <Button type="submit">
-                Login
+            <div className="flex justify-end">
+                <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200" type="submit">
+                    Login
                 </Button>
+            </div>
+
             </form>
         </CardContent>
         </Card>
-    </Layout>
+        </div>
   )
 }
 

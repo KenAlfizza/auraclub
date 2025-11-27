@@ -65,12 +65,22 @@ export function PromotionProvider({ children }) {
         setLoading(true)
         setError(null)
         try {
-            const data = await promotionAPI.getAll(query)
+            const sanitizedQuery = Object.fromEntries(
+                Object.entries(query).filter(([_, value]) =>
+                    value !== null &&
+                    value !== undefined &&
+                    value !== "" &&
+                    value !== "null" &&
+                    value !== "undefined"
+                )
+            );
+            
+            const data = await promotionAPI.getAll(sanitizedQuery)
             setPromotions(data.results || [])
             setPromotionsCount(data.count || 0)
             return data
         } catch (err) {
-            setError(err.message || "Failed to patch promotion");
+            setError(err.message || "Failed to fetch promotion");
             throw err;
         } finally {
             setLoading(false)
@@ -116,7 +126,16 @@ export function PromotionProvider({ children }) {
         setError(null);
 
         try {
-            const response = await promotionAPI.patch(id, data);
+            const sanitizedData = Object.fromEntries(
+                Object.entries(data).filter(([_, value]) =>
+                    value !== null &&
+                    value !== undefined &&
+                    value !== "" &&
+                    value !== "null" &&
+                    value !== "undefined"
+                )
+            );
+            const response = await promotionAPI.patch(id, sanitizedData);
             return response;
         } catch (err) {
             setError(err.message || "Failed to patch promotion");

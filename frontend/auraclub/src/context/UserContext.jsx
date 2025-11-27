@@ -4,44 +4,10 @@ import { userAPI } from '../services/user-api'
 const UserContext = createContext()
 
 export function UserProvider({ children }) {
-    // Private state and Setters
-    const [userUtorid, setUserUtorid] = useState(null)
-    const [userName, setUserName] = useState(null)
-    const [userEmail, setUserEmail] = useState(null)
-    const [userBirthday, setUserBirthday] = useState(null)   
-    const [userRole, setUserRole] = useState(null)
-    const [userPoints, setUserPoints] = useState(null)
-    const [userCreatedAt, setUserCreatedAt] = useState(null)
-    const [userLastLogin, setUserLastLogin] = useState(null)
-    const [userVerified, setUserVerified] = useState(null)
-
+    // Single user object state (logged-in user)
+    const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-
-
-    // Getters
-    const getUserUtorid = userUtorid
-    const getUserName = userName
-    const getUserEmail = userEmail
-    const getUserBirthday = userBirthday
-    const getUserRole = userRole
-    const getUserPoints = userPoints
-    const getUserCreatedAt = userCreatedAt
-    const getUserLastLogin = userLastLogin
-    const getUserVerified = userVerified
-
-    // Helper function to set all user data
-    const setAllUserData = (user) => {
-        setUserUtorid(user.utorid)
-        setUserName(user.name)
-        setUserEmail(user.email)
-        setUserBirthday(user.birthday)
-        setUserRole(user.role)
-        setUserPoints(user.points)
-        setUserCreatedAt(user.createdAt)
-        setUserLastLogin(user.lastLogin)
-        setUserVerified(user.verified)
-    }
 
     // Login
     const login = async (utorid, password) => {
@@ -58,20 +24,28 @@ export function UserProvider({ children }) {
             // Store token
             localStorage.setItem('token', data.token)
 
-           // Fetch full user data with the token
+            // Fetch full user data with the token
             console.log('Fetching user data with token...')
             await fetchCurrentUser()
 
             return data
 
         } catch (err) {
-                console.error('Login failed in context:', err)
-                setError(err.message)
-                throw err
+            console.error('Login failed in context:', err)
+            setError(err.message)
+            throw err
         } finally {
-                setLoading(false)
-                console.log('Login process complete')
+            setLoading(false)
+            console.log('Login process complete')
         }
+    }
+
+    
+    // Logout function
+    const logout = () => {
+        localStorage.removeItem('token')
+        setUser(null)
+        setError(null)
     }
 
     // Fetch current user data with token
@@ -80,15 +54,16 @@ export function UserProvider({ children }) {
         setError(null)
         
         try {
-            const user = await userAPI.getCurrentUser()
-            console.log('Fetched user data:', user)
-            setAllUserData(user)
-            return user
+            const userData = await userAPI.getCurrentUser()
+            console.log('Fetched current user data:', userData)
+            setUser(userData)
+            return userData
         } catch (err) {
-            console.error('Failed to fetch user:', err)
+            console.error('Failed to fetch current user:', err)
             setError(err.message)
             // If token is invalid, clear it
             localStorage.removeItem('token')
+            setUser(null)
             throw err
         } finally {
             setLoading(false)
@@ -110,10 +85,11 @@ export function UserProvider({ children }) {
     const register = async (utorid, name, email) => {
         console.log('Context register called with:', utorid, name, email)
         setLoading(true)
+        setError(null)
 
         try {
-            console.log('Callign userAPI.register...')
-            const data = await userAPI.register(utorid, name, email);
+            console.log('Calling userAPI.register...')
+            const data = await userAPI.register(utorid, name, email)
 
             console.log('Register response received:', data)
 
@@ -127,31 +103,91 @@ export function UserProvider({ children }) {
             setLoading(false)
             console.log('Register process complete')
         }
-
     }
 
-    // "Public interface"
+    // Function to fetch all users
+    const fetchUsers = async (query = {}) => {
+        setLoading(true)
+        setError(null)
+        try {
+            // Sanitize query: remove null, undefined, "null", "undefined", and ""
+            const sanitizedQuery = Object.fromEntries(
+                Object.entries(query).filter(([_, value]) =>
+                    value !== null &&
+                    value !== undefined &&
+                    value !== "" &&
+                    value !== "null" &&
+                    value !== "undefined"
+                )
+            );
+            const data = await userAPI.getAll(sanitizedQuery);
+            return data;
+        } catch (err) {
+            setError(err.message || "Failed to fetch users")
+            throw err
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Function to fetch a single user by ID
+    const fetchUser = async (id) => {
+        setLoading(true)
+        setError(null)
+        try {
+            const data = await userAPI.get(id)
+            console.log("Fetched user by ID:", data)
+            return data
+        } catch (err) {
+            console.error("Failed to fetch user:", err)
+            setError(err.message || "Failed to load user")
+            throw err
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Funcion to patch the user
+    const patchUser = async (id, data) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const sanitizedData = Object.fromEntries(
+                Object.entries(data).filter(([_, value]) =>
+                    value !== null &&
+                    value !== undefined &&
+                    value !== "" &&
+                    value !== "null" &&
+                    value !== "undefined"
+                )
+            );
+            const response = await userAPI.patch(id, sanitizedData);
+            return response;
+        } catch (err) {
+            setError(err.message || "Failed to patch user");
+            throw err
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Public interface
     const value = {
+        user,
         loading,
         error,
         
-        getUserUtorid,
-        getUserName,
-        getUserEmail,
-        getUserBirthday,
-        getUserRole,
-        getUserPoints,
-        getUserCreatedAt,
-        getUserLastLogin,
-        getUserVerified,
-        
         // Actions
         login,
+        logout,
         register,
         fetchCurrentUser,
+        fetchUsers,
+        fetchUser,
+        patchUser,
     }
     
-    // Public interface
     return (
         <UserContext.Provider value={value}>
             {children}
@@ -160,9 +196,9 @@ export function UserProvider({ children }) {
 }
 
 export function useUser() {
-  const context = useContext(UserContext)
-  if (!context) {
-    throw new Error('useUser must be used within UserProvider')
-  }
-  return context
+    const context = useContext(UserContext)
+    if (!context) {
+        throw new Error('useUser must be used within UserProvider')
+    }
+    return context
 }

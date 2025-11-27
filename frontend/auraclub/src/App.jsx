@@ -4,13 +4,18 @@ import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { DashboardPage } from './pages/DashboardPage'
 
-import { PromotionProvider } from './context/PromotionContext'
+import { UserProvider } from './context/userContext'
+import { ManageUserPage } from './pages/user/ManageUserPage'
+import { ViewUserPage } from './pages/user/ViewUserPage'
+import { EditUserPage } from './pages/user/EditUserPage'
 
-import { ManagePromotionPage } from './pages/manager/promotion/ManagePromotionPage'
-import { ViewPromotionPage } from './pages/manager/promotion/ViewPromotionPage'
-import { CreatePromotionPage } from './pages/manager/promotion/CreatePromotionPage'
-import { ViewAllPromotionPage } from './pages/manager/promotion/ViewAllPromotionPage'
-import { EditPromotionPage} from './pages/manager/promotion/EditPromotionPage'
+
+import { PromotionProvider } from './context/PromotionContext'
+import { ManagePromotionPage } from './pages/promotion/ManagePromotionPage'
+import { ViewPromotionPage } from './pages/promotion/ViewPromotionPage'
+import { CreatePromotionPage } from './pages/promotion/CreatePromotionPage'
+import { ViewAllPromotionPage } from './pages/promotion/ViewAllPromotionPage'
+import { EditPromotionPage} from './pages/promotion/EditPromotionPage'
 
 function App() {
   return (
@@ -20,6 +25,36 @@ function App() {
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      
+      <Route 
+        path="/manage/users/all"
+        element={
+            <UserProvider>
+            <ManageUserPage />
+            </UserProvider>
+        }
+      />
+
+      <Route 
+        path="/manage/users/view/:id"
+        element={
+            <UserProvider>
+            <ViewUserPage />
+            </UserProvider>
+        }
+      />
+
+      <Route 
+        path="/manage/users/edit/:id"
+        element={
+            <UserProvider>
+            <EditUserPage />
+            </UserProvider>
+        }
+      />
+      
+      
+      
       <Route
         path="/manage/promotions"
         element={

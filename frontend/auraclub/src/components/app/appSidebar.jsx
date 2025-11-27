@@ -48,7 +48,7 @@ const navigate_items = [
 const manage_items = [
   {
     title: "Users",
-    url: "#",
+    url: "/manage/users/all",
     icon: Users,
   },
   {
@@ -77,6 +77,24 @@ export function AppSidebar() {
           </Link>
         </div>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigate</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigate_items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
         <SidebarGroup>
           <SidebarGroupLabel>Manage</SidebarGroupLabel>
           <SidebarGroupContent>

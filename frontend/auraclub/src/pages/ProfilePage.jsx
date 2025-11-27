@@ -13,94 +13,93 @@ import {
 } from "@/components/ui/card"
 
 export function ProfilePage() {
-    const {
-        getUserUtorid,
-        getUserName,
-        getUserEmail,
-        getUserBirthday,
-        getUserRole,
-        getUserPoints,
-        getUserCreatedAt,
-        getUserLastLogin,
-        getUserVerified
-    } = useUser()
+    const { user } = useUser()
 
-  return (
-    <Layout header={<Header />}>
-        <div className="flex-row w-full max-w-xl">
-            <div className="mb-2">
-                <Card className="flex-col justify-center">
-                    <CardHeader className="text-center">
-                        <CardTitle>My Profile</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex gap-8">
-                        <div>
-                            <img src="\src\assets\react.svg" className="w-32"/>
-                        </div>
-                        <div className="flex flex-row gap-8">
-                            <div className="flex-1 flex-col gap-8">
-                                <div>
-                                <Label htmlFor="utorid">UTORID</Label>
+    // Handle loading or no user state
+    if (!user) {
+        return (
+            <Layout header={<Header />}>
+                <div>Loading...</div>
+            </Layout>
+        )
+    }
+
+    return (
+        <Layout header={<Header />}>
+            <div className="flex-row w-full max-w-xl">
+                <div className="mb-2">
+                    <Card className="flex-col justify-center">
+                        <CardHeader className="text-center">
+                            <CardTitle>My Profile</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex gap-8">
+                            <div>
+                                <img src="\src\assets\react.svg" className="w-32"/>
+                            </div>
+                            <div className="flex flex-row gap-8">
+                                <div className="flex-1 flex-col gap-8">
+                                    <div>
+                                        <Label htmlFor="utorid">UTORID</Label>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="name">Name</Label>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="email">Email</Label>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="birthday">Birthday</Label>
+                                    </div>
                                 </div>
-
-                                <div>
-                                <Label htmlFor="name">Name</Label>
-                                </div>
-
-                                <div>
-                                <Label htmlFor="email">Email</Label>
-                                </div>
-
-                                <div>
-                                <Label htmlFor="birthday">Birthday</Label>
+                                <div className="flex-1 flex-col gap-8">
+                                    <div>{user.utorid}</div>
+                                    <div>{user.name}</div>
+                                    <div>{user.email}</div>
+                                    <div>{user.birthday}</div>
                                 </div>
                             </div>
-                            <div className="flex-1 flex-col gap-8">
-                                <div>{getUserUtorid}</div>
-                                <div>{getUserName}</div>
-                                <div>{getUserEmail}</div>
-                                <div>{getUserBirthday}</div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="flex gap-2">
+                    <Card className="w-full max-w-xl flex-col justify-center">
+                        <CardHeader className="text-center">
+                            <CardTitle>My Role</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex justify-center">
+                            <div>
+                                <Label className="text-3xl" htmlFor="role">{user.role}</Label>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardContent>
+                    </Card>
 
-            <div className="flex gap-2">
-                <Card className="w-full max-w-xl flex-col justify-center">
-                    <CardHeader className="text-center">
-                        <CardTitle>My Role</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex justify-center">
-                        <div>
-                            <Label className="text-3xl" htmlFor="role">{getUserRole}</Label>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="w-full max-w-xl flex-col justify-center">
-                    <CardHeader className="text-center">
-                        <CardTitle>Security</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-col justify-center">
-                        <div>
-                            <Label htmlFor="verified"> Verified: {getUserVerified ? "Yes" : "No"}</Label>
-                        </div>
-                        <div>
-                            <Label htmlFor="lastlogin">Created At: {String(getUserCreatedAt).split('T')[0]}</Label>
-                        </div>
-                        <div>
-                            <Label htmlFor="lastlogin">Last Login: {String(getUserLastLogin).split('T')[0]}</Label>
-                        </div>
-                        <div>
-                            <Label htmlFor="changepassword">Change Password</Label>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <Card className="w-full max-w-xl flex-col justify-center">
+                        <CardHeader className="text-center">
+                            <CardTitle>Security</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex-col justify-center">
+                            <div>
+                                <Label htmlFor="verified">Verified: {user.verified ? "Yes" : "No"}</Label>
+                            </div>
+                            <div>
+                                <Label htmlFor="createdat">Created At: {String(user.createdAt).split('T')[0]}</Label>
+                            </div>
+                            <div>
+                                <Label htmlFor="lastlogin">Last Login: {String(user.lastLogin).split('T')[0]}</Label>
+                            </div>
+                            <div>
+                                <Label htmlFor="changepassword">Change Password</Label>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
-    </Layout>
-  );
+        </Layout>
+    );
 }
 
 export default ProfilePage

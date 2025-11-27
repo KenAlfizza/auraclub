@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000'
+import { API_BASE_URL } from '@/config/api'
 
 async function handleResponse(response) {
   console.log('Response status:', response.status)
@@ -57,8 +57,71 @@ export const userAPI = {
 
     console.log('Register complete, response:', response)
     return handleResponse(response)
-
   },
 
 
+  // Get list of users with filters
+  getAll: async (query = {}) => {
+      console.log('userAPI.getAll called:', `${API_BASE_URL}/users`)
+      const params = new URLSearchParams(query).toString()
+      console.log(
+          "userAPI.getAll called:",
+          `${API_BASE_URL}/users?${params}`
+      )
+
+      const response = await fetch(
+          `${API_BASE_URL}/users?${params}`,
+          {
+              method: "GET",
+              headers: getAuthHeaders(),
+          }
+      )
+      console.log('Fetch complete, users:', response)
+      const data = await handleResponse(response)
+      return data
+  },
+
+  // Retrieve a single user with id
+  get: async (id) => {
+      console.log('userAPI.get called:', `${API_BASE_URL}/users/${id}`)
+      const response = await fetch(
+          `${API_BASE_URL}/users/${id}`,
+          {
+              method: "GET",
+              headers: getAuthHeaders(),
+          }
+      )
+      const data = await handleResponse(response)
+      console.log('Fetch complete, user:', data)
+      return data
+  },
+
+  // Retrieve a single user with id
+  get: async (id) => {
+      console.log('userAPI.get called:', `${API_BASE_URL}/users/${id}`)
+      const response = await fetch(
+          `${API_BASE_URL}/users/${id}`,
+          {
+              method: "GET",
+              headers: getAuthHeaders(),
+          }
+      )
+      const data = await handleResponse(response)
+      console.log('Fetch complete, user:', data)
+      return data
+  },
+
+  // Patch a user with specified id
+  patch: async (id, data) => {
+    const url = `${API_BASE_URL}/users/${id}`;
+    console.log("userAPI.patch called:", url);
+
+    const response = await fetch(url, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+
+    return handleResponse(response);
+  },
 }

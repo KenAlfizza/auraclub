@@ -22,21 +22,21 @@ import {
 } from "@/components/ui/pagination";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 
 import { Button } from "@/components/ui/button";
@@ -108,7 +108,8 @@ export function ViewAllPromotionPage() {
 
     return (
         <Layout header={<Header />}>
-            <div className="flex flex-col w-full h-full gap-4">
+            <div className="w-full h-full">
+            <div className="flex flex-col w-full gap-4">
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row items-center gap-4">
                         <ChevronLeft className="hover:cursor-pointer scale-125" onClick={() => navigate("/manage/promotions")}/>
@@ -224,6 +225,7 @@ export function ViewAllPromotionPage() {
                         </CardFooter>
                     </Card>
                 </div>
+            </div>
             </div>
         </Layout>
     );
