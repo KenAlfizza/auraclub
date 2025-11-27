@@ -47,11 +47,13 @@ import { Label } from "@/components/ui/label";
 import Header from "@/components/app/appHeader";
 
 import { usePromotion } from "@/context/PromotionContext";
+import { useUser } from "@/context/UserContext";
 
 import { Filter, ChevronLeft } from "lucide-react";
 
-export function ViewAllPromotionPage() {
+export function ViewAvailablePromotionPage() {
     const navigate = useNavigate();
+    const { user } = useUser();
     const { fetchPromotions, loading, error } = usePromotion();
     const [promotions, setPromotions] = useState([]);
     const [activePage, setActivePage] = useState(1);
@@ -72,7 +74,7 @@ export function ViewAllPromotionPage() {
     useEffect(() => {
         const fetchPage = async () => {
             try {
-                const data = await fetchPromotions({ name: filterName, type: filterType, page: activePage, limit: itemsPerPage });
+                const data = await fetchPromotions({ name: filterName, type: filterType, page: activePage, limit: itemsPerPage, started: true, ended: false });
                 if (data?.results) {
                     setPromotions(data.results);
                 }
@@ -112,8 +114,8 @@ export function ViewAllPromotionPage() {
             <div className="flex flex-col w-full gap-4">
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row items-center gap-4">
-                        <ChevronLeft className="hover:cursor-pointer scale-125" onClick={() => navigate("/manage/promotions")}/>
-                        <Label className="text-2xl">All Promotions</Label>
+                        <ChevronLeft className="hover:cursor-pointer scale-125" onClick={() => navigate("/dashboard")}/>
+                        <Label className="text-2xl">Available Promotions</Label>
                     </div>
                     <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                         <DialogTrigger asChild>
@@ -231,4 +233,4 @@ export function ViewAllPromotionPage() {
     );
 }
 
-export default ViewAllPromotionPage;
+export default ViewAvailablePromotionPage

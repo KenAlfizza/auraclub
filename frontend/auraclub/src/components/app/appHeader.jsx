@@ -14,7 +14,7 @@ export function Header() {
         <div className="flex ml-auto m-4 gap-4">
             <NavigationMenu>
                 <NavigationMenuItem className="hidden md:block">
-                <NavigationMenuTrigger className="text-lg">Regular</NavigationMenuTrigger>
+                <NavigationMenuTrigger className="text-lg">Superuser</NavigationMenuTrigger>
                     <NavigationMenuContent>
                         <ul className="grid w-[200px] gap-2 p-4">
                             <li>
@@ -30,6 +30,11 @@ export function Header() {
                             <li>
                                 <NavigationMenuLink asChild>
                                 <Link to="#">Manager</Link>
+                                </NavigationMenuLink>
+                            </li>
+                            <li>
+                                <NavigationMenuLink asChild>
+                                <Link to="#">Superuser</Link>
                                 </NavigationMenuLink>
                             </li>
                             </ul>

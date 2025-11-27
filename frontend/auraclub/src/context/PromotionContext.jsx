@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { promotionAPI } from '../services/promotion-api'
+import { promotionAPI } from '../api/promotion-api'
 
 const PromotionContext = createContext()
 

@@ -7,11 +7,14 @@ import Layout from "./Layout"
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardTitle,
+  CardDescription,
   CardContent,
   CardHeader,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { LogIn } from "lucide-react"
 
 export function LoginPage() {
     const navigate = useNavigate()
@@ -36,19 +39,32 @@ export function LoginPage() {
         }
 
         try {
-        await login(utorid, password)
+        const data = await login(utorid, password)
+
+
+
+
+
         // Login successful, redirect to profile
-        navigate('/profile')
+        navigate('/dashboard')
         } catch (err) {
             setLoginError(err.message || 'Login failed. Please check your credentials.')
         }
     }
     
     return (
-        <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-sm">
+        <Layout>
+        <div className="flex flex-col w-full items-center gap-4">
+            <img src="/src/assets/auraclub_logo.svg" className="block mx-auto scale-75" />
+        <Card className="w-full max-w-md">
         <CardHeader>
-            <img src="/src/assets/auraclub_logo.svg" className="block mx-auto scale-90" />
+            <div className="flex items-center justify-center gap-2">
+                <LogIn/>
+                <CardTitle className="text-2xl text-center">Login</CardTitle>
+            </div>
+            <CardDescription className="text-center">
+                Enter your UTORID and password below
+            </CardDescription>
         </CardHeader>
         <CardContent>
             <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
@@ -100,6 +116,7 @@ export function LoginPage() {
         </CardContent>
         </Card>
         </div>
+    </Layout>
   )
 }
 

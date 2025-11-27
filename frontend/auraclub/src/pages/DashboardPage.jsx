@@ -3,6 +3,8 @@ import Header from "@/components/app/appHeader"
 import { useUser } from "@/context/UserContext"
 import { useState } from "react"
 
+import { useNavigate } from "react-router-dom";
+
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -11,14 +13,23 @@ import {
   CardHeader,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
-import { Calendar, Edit, Table } from "lucide-react";
+import { 
+  Calendar, 
+  Users, 
+  UserPlus, 
+  CalendarDays, 
+  Plus, 
+  FileText, 
+  CheckCircle, 
+  Tag,
+  CreditCard,
+} from "lucide-react";
 
 export function DashboardPage() {
-    const {getUserRole,
-        getUserPoints
-    } = useUser()
+    const navigate = useNavigate();
+    const { user } = useUser()
 
-    const [dashboardRole, setDashboardRole] = useState('regular')
+    const [dashboardRole, setDashboardRole] = useState('superuser')
 
 
     const date = new Date();
@@ -32,9 +43,9 @@ export function DashboardPage() {
 
     if (dashboardRole === "regular") {
         return (
-            <Layout header={<Header />}>
+            <Layout header={true} sidebar={true}>
                 <div className="flex flex-col w-full gap-4 h-full">
-                    <Label className="text-4xl">Hello!</Label>
+                    <Label className="text-4xl">Hello {user.name}!</Label>
 
                     <div className="flex-1 flex flex-row gap-4">
                         <div className="flex-1 flex flex-col gap-4">
@@ -50,7 +61,7 @@ export function DashboardPage() {
                                     </CardHeader>
 
                                     <CardContent>
-                                        <Label className="text-7xl">{getUserPoints}</Label>
+                                        <Label className="text-7xl">{user.points}</Label>
                                     </CardContent>
 
                                     <CardContent className="text-right">
@@ -65,11 +76,15 @@ export function DashboardPage() {
                                         <CardTitle className="text-lg">Available Promotions</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <Label className="text-5xl">{/*getAvailablePromotions*/}</Label>
+                                        <Label className="text-5xl">{}</Label>
                                     </CardContent>
                                     </div>
                                     <CardContent className="text-right">
-                                    <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200">
+                                    <Button 
+                                        variant="outline"
+                                        className="bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                                        onClick={() => navigate("/promotions")}
+                                    >
                                         View Promotions
                                     </Button>
                                     </CardContent>
@@ -88,7 +103,11 @@ export function DashboardPage() {
                                 </div>
 
                                 <CardContent className="text-right">
-                                <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200">
+                                <Button 
+                                    variant="outline"
+                                    className="bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                                    onClick={() => navigate("/transactions")}
+                                >
                                     View Transactions
                                 </Button>
                                 </CardContent>
@@ -102,7 +121,7 @@ export function DashboardPage() {
 
     if (dashboardRole === "cashier") {
         return (
-            <Layout header={<Header />}>
+            <Layout header={<Header />} sidebar={true}>
                 <div className="flex w-full gap-4">
                     <div className="flex-1">
                         <Card 
@@ -111,10 +130,10 @@ export function DashboardPage() {
                             <CardHeader>
                                 <div className="flex items-center gap-4">
                                     <Calendar/>
-                                    <CardTitle className="text-2xl">Today's Summary</CardTitle>
+                                    <CardTitle className="text-xl sm:text-2xl">Today's Summary</CardTitle>
                                     
                                 </div>
-                                <Label className="text-5xl">{todayDate}</Label>
+                                <Label className="text-3xl sm:text-4xl md:text-5xl">{todayDate}</Label>
                             </CardHeader>
                             <CardContent>
                                 <Label className="text-5xl">{/*getUserTransactions*/}</Label>
@@ -164,8 +183,22 @@ export function DashboardPage() {
                         </div>
                         <div>
                             <div className="flex flex-row w-full gap-4">
-                                <Button className="w-full bg-green-400">Create Transaction</Button>
-                                <Button className="w-full bg-yellow-400">Process Redemption</Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6"
+                                    onClick={() => navigate("/manage/transactions/create")}
+                                >
+                                    <Plus className="mr-2 h-5 w-5" />
+                                    Create Transaction
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6"
+                                    onClick={() => navigate("/manage/transactions/redemption")}
+                                >
+                                    <CheckCircle className="mr-2 h-5 w-5" />
+                                    Process Redemption
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -174,9 +207,10 @@ export function DashboardPage() {
         )
     }
 
-    if (dashboardRole === 'manager') {
+    if (dashboardRole === 'manager' || dashboardRole === 'superuser' ) {
         return (
-            <Layout header={<Header />}>
+            <Layout header={true} sidebar={true}>
+                <div className="w-full h-full">
                 <div className="flex flex-col w-full gap-4">
                     <div className="flex w-full flex-col gap-4 md:flex-row md:items-stretch min-h-full">
                         {/* LEFT SIDE */}
@@ -184,10 +218,10 @@ export function DashboardPage() {
                         <Card className="w-full h-full">
                             <CardHeader className="flex flex-col">
                             <div className="flex items-center gap-2">
-                                <Calendar />
-                                <CardTitle className="text-xl">Today's Overview</CardTitle>
+                                <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
+                                <CardTitle className="text-lg sm:text-xl">Today's Overview</CardTitle>
                             </div>
-                            <Label className="text-4xl whitespace-nowrap">{todayDate}</Label>
+                            <Label className="text-2xl sm:text-3xl md:text-4xl break-words">{todayDate}</Label>
                             </CardHeader>
                             <CardContent className="mt-4" />
                         </Card>
@@ -201,19 +235,19 @@ export function DashboardPage() {
 
                             <Card className="flex-1 border-0 bg-transparent shadow-none h-full">
                                 <CardHeader>
-                                <Label className="text-lg">Events In Progress</Label>
+                                <Label className="text-base sm:text-lg">Events In Progress</Label>
                                 </CardHeader>
                             </Card>
 
                             <Card className="flex-1 border-0 bg-transparent shadow-none h-full">
                                 <CardHeader>
-                                <Label className="text-lg">Ongoing Promotions</Label>
+                                <Label className="text-base sm:text-lg">Ongoing Promotions</Label>
                                 </CardHeader>
                             </Card>
 
                             <Card className="flex-1 border-0 bg-transparent shadow-none h-full">
                                 <CardHeader>
-                                    <Label className="text-lg">User Statistics</Label>
+                                    <Label className="text-base sm:text-lg">User Statistics</Label>
                                 </CardHeader>
                             </Card>
 
@@ -223,45 +257,124 @@ export function DashboardPage() {
 
                     </div>
 
-                    <div className="flex flex-row w-full gap-4">
-                         <Card className>
+                    <div className="flex flex-col lg:flex-row w-full gap-4">
+                        <Card className="w-full">
                             <CardHeader>
-                                <Label className="text-lg">Manage Events</Label>
+                                <div className="flex items-center gap-2">
+                                    <Users className="w-5 h-5" />
+                                    <Label className="text-lg sm:text-xl font-semibold">Manage Users</Label>
+                                </div>
                             </CardHeader>
-                            <CardContent className="flex flex-col w-full gap-2">
-                                <Button>Create Event</Button>
-                                <Button>Edit/View All</Button>
+                            <CardContent className="flex flex-col gap-2">
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/users/register")}
+                                >
+                                    <UserPlus className="mr-2 h-5 w-5" />
+                                    Register User
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/users/all")}
+                                >
+                                    <FileText className="mr-2 h-5 w-5" />
+                                    Edit/View All
+                                </Button>
                             </CardContent>
                         </Card>
-                        <Card className>
+
+                        <Card className="w-full">
                             <CardHeader>
-                                <Label className="text-lg">Manage Transactions</Label>
+                                <div className="flex items-center gap-2">
+                                    <CalendarDays className="w-5 h-5" />
+                                    <Label className="text-lg sm:text-xl font-semibold">Manage Events</Label>
+                                </div>
                             </CardHeader>
-                            <CardContent className="flex flex-col w-full gap-2">
-                                <Button>Create Transaction</Button>
-                                <Button>Process Redemption</Button>
-                                <Button>Edit/View All</Button>
+                            <CardContent className="flex flex-col gap-2">
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/events/create")}
+                                >
+                                    <Plus className="mr-2 h-5 w-5" />
+                                    Create Event
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/events/all")}
+                                >
+                                    <FileText className="mr-2 h-5 w-5" />
+                                    Edit/View All
+                                </Button>
                             </CardContent>
                         </Card>
-                        <Card className="">
+
+                        <Card className="w-full">
                             <CardHeader>
-                                <Label className="text-lg whitespace-">Manage Users</Label>
+                                <div className="flex items-center gap-2">
+                                    <CreditCard className="w-5 h-5 flex-shrink-0" />
+                                    <Label className="text-lg sm:text-xl font-semibold whitespace-nowrap">Manage Transactions</Label>
+                                </div>
                             </CardHeader>
-                            <CardContent className="flex flex-col w-full gap-2">
-                                <Button>Register User</Button>
-                                <Button>Edit/View All</Button>
+                            <CardContent className="flex flex-col gap-2">
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/transactions/create")}
+                                >
+                                    <Plus className="mr-2 h-5 w-5 flex-shrink-0" />
+                                    <span className="whitespace-nowrap">Create Transaction</span>
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/transactions/redemption")}
+                                >
+                                    <CheckCircle className="mr-2 h-5 w-5 flex-shrink-0" />
+                                    <span className="whitespace-nowrap">Process Redemption</span>
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/transactions/all")}
+                                >
+                                    <FileText className="mr-2 h-5 w-5 flex-shrink-0" />
+                                    <span className="whitespace-nowrap">Edit/View All</span>
+                                </Button>
                             </CardContent>
                         </Card>
-                        <Card className="">
+
+                        <Card className="w-full">
                             <CardHeader>
-                                <Label className="text-lg whitespace-">Manage Events</Label>
+                                <div className="flex items-center gap-2">
+                                    <Tag className="w-5 h-5" />
+                                    <Label className="text-lg sm:text-xl font-semibold">Manage Promotions</Label>
+                                </div>
                             </CardHeader>
-                            <CardContent className="flex flex-col w-full gap-2">
-                                <Button>Create Event</Button>
-                                <Button>Edit/View All</Button>
+                            <CardContent className="flex flex-col gap-2">
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/promotions/create")}
+                                >
+                                    <Plus className="mr-2 h-5 w-5" />
+                                    Create Promotion
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="w-full bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md py-6 text-base justify-start"
+                                    onClick={() => navigate("/manage/promotions/all")}
+                                >
+                                    <FileText className="mr-2 h-5 w-5" />
+                                    Edit/View All
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
+                </div>
                 </div>
             </Layout>
 

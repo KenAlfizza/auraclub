@@ -1,4 +1,6 @@
-import Layout from "./Layout";
+import { useNavigate } from "react-router-dom";
+
+import Layout from "../Layout";
 import { Header } from "@/components/app/appHeader";
 import { Label } from "@/components/ui/label";
 import { useUser } from "@/context/UserContext";
@@ -14,6 +16,7 @@ import {
 
 export function ProfilePage() {
     const { user } = useUser()
+    const navigate = useNavigate();
 
     // Handle loading or no user state
     if (!user) {
@@ -25,7 +28,7 @@ export function ProfilePage() {
     }
 
     return (
-        <Layout header={<Header />}>
+        <Layout header={true} sidebar={true}>
             <div className="flex-row w-full max-w-xl">
                 <div className="mb-2">
                     <Card className="flex-col justify-center">
@@ -81,18 +84,26 @@ export function ProfilePage() {
                         <CardHeader className="text-center">
                             <CardTitle>Security</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex-col justify-center">
+                        <CardContent className="flex flex-col justify-center gap-2">
                             <div>
-                                <Label htmlFor="verified">Verified: {user.verified ? "Yes" : "No"}</Label>
+                                <div>
+                                    <Label htmlFor="verified">Verified: {user.verified ? "Yes" : "No"}</Label>
+                                </div>
+                                <div>
+                                    <Label htmlFor="createdat">Created At: {String(user.createdAt).split('T')[0]}</Label>
+                                </div>
+                                <div>
+                                    <Label htmlFor="lastlogin">Last Login: {String(user.lastLogin).split('T')[0]}</Label>
+                                </div>
                             </div>
-                            <div>
-                                <Label htmlFor="createdat">Created At: {String(user.createdAt).split('T')[0]}</Label>
-                            </div>
-                            <div>
-                                <Label htmlFor="lastlogin">Last Login: {String(user.lastLogin).split('T')[0]}</Label>
-                            </div>
-                            <div>
-                                <Label htmlFor="changepassword">Change Password</Label>
+                            <div className="text-center">
+                                <Button 
+                                    variant="outline"
+                                    className="bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                                    onClick={() => navigate("/change-password")}
+                                >
+                                    Change Password
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

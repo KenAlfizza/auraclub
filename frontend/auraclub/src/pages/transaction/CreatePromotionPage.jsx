@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { usePromotion } from "@/context/PromotionContext";
+import { useTransaction } from "@/context/TransactionContext";
 
 import Layout from "@/pages/Layout";
 
@@ -32,14 +32,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-export function CreatePromotionPage() {
+export function CreateTransactionPage() {
     const navigate = useNavigate();
-    const { promotion, setPromotion, createPromotion, loading, error } =
-        usePromotion();
+    const { transaction, setTransaction, createTransaction, loading, error } =
+        useTransaction();
 
     const handleChange = (e) => {
         const { name, value, type } = e.target;
-        setPromotion((prev) => ({
+        setTransaction((prev) => ({
         ...prev,
         [name]: type === "number" ? (value ? Number(value) : null) : value || null,
         }));
@@ -48,8 +48,8 @@ export function CreatePromotionPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-        await createPromotion();
-        alert("Promotion created successfully!");
+        await createTransaction();
+        alert("Transaction created successfully!");
         navigate("/dashboard");
         } catch (err) {
             console.error(err);
@@ -59,23 +59,23 @@ export function CreatePromotionPage() {
     const handleTimeChange = (field, timeValue) => {
         const [hours, minutes] = timeValue.split(":");
         // Initialize with today if no date exists
-        const date = promotion[field] ? new Date(promotion[field]) : new Date();
+        const date = transaction[field] ? new Date(transaction[field]) : new Date();
         date.setHours(Number(hours), Number(minutes));
-        setPromotion((p) => ({ ...p, [field]: date.toISOString() }));
+        setTransaction((p) => ({ ...p, [field]: date.toISOString() }));
     };
 
     const handleDateSelect = (field, selectedDate) => {
         // Preserve existing time if already selected
-        const prevDate = promotion[field] ? new Date(promotion[field]) : new Date(selectedDate);
+        const prevDate = transaction[field] ? new Date(transaction[field]) : new Date(selectedDate);
         const combined = new Date(selectedDate);
         combined.setHours(prevDate.getHours(), prevDate.getMinutes());
-        setPromotion((p) => ({ ...p, [field]: combined.toISOString() }));
+        setTransaction((p) => ({ ...p, [field]: combined.toISOString() }));
     };
 
     return (
         <Layout header={true} sidebar={true}>
             <div className="flex flex-col w-full h-full gap-4">
-                <Label className="text-2xl">Create Promotion</Label>
+                <Label className="text-2xl">Create Transaction</Label>
 
                 <Card className="w-full pt-4">
                 <CardContent>
@@ -87,8 +87,8 @@ export function CreatePromotionPage() {
                             <Input
                             id="name"
                             name="name"
-                            placeholder="My Promotion"
-                            value={promotion.name ?? ""}
+                            placeholder="My Transaction"
+                            value={transaction.name ?? ""}
                             onChange={handleChange}
                             disabled={loading}
                             required
@@ -102,7 +102,7 @@ export function CreatePromotionPage() {
                             id="description"
                             name="description"
                             placeholder="Description"
-                            value={promotion.description ?? ""}
+                            value={transaction.description ?? ""}
                             onChange={handleChange}
                             disabled={loading}
                             required
@@ -113,13 +113,13 @@ export function CreatePromotionPage() {
                         <div>
                             <Label htmlFor="type">Type</Label>
                             <Select
-                            value={promotion.type ?? ""}
+                            value={transaction.type ?? ""}
                             onValueChange={(value) =>
-                                setPromotion((prev) => ({ ...prev, type: value }))
+                                setTransaction((prev) => ({ ...prev, type: value }))
                             }
                             >
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select promotion type" />
+                                <SelectValue placeholder="Select transaction type" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="automatic">Automatic</SelectItem>
@@ -135,12 +135,12 @@ export function CreatePromotionPage() {
                             <PopoverTrigger asChild>
                                 <Button
                                 variant="outline"
-                                data-empty={!promotion.startTime}
+                                data-empty={!transaction.startTime}
                                 className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal"
                                 >
                                 <CalendarIcon />
-                                {promotion.startTime
-                                    ? format(new Date(promotion.startTime), "PPP")
+                                {transaction.startTime
+                                    ? format(new Date(transaction.startTime), "PPP")
                                     : "Pick a date"}
                                 </Button>
                             </PopoverTrigger>
@@ -148,8 +148,8 @@ export function CreatePromotionPage() {
                                 <Calendar
                                 mode="single"
                                 selected={
-                                    promotion.startTime
-                                    ? new Date(promotion.startTime)
+                                    transaction.startTime
+                                    ? new Date(transaction.startTime)
                                     : undefined
                                 }
                                 onSelect={(date) => handleDateSelect("startTime", date)}
@@ -159,8 +159,8 @@ export function CreatePromotionPage() {
 
                             <Select
                             value={
-                                promotion.startTime
-                                ? format(new Date(promotion.startTime), "HH:mm")
+                                transaction.startTime
+                                ? format(new Date(transaction.startTime), "HH:mm")
                                 : ""
                             }
                             onValueChange={(value) => handleTimeChange("startTime", value)}>
@@ -190,12 +190,12 @@ export function CreatePromotionPage() {
                                 <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
-                                    data-empty={!promotion.endTime}
+                                    data-empty={!transaction.endTime}
                                     className="data-[empty=true]:text-muted-foreground w-full justify-start text-left font-normal"
                                 >
                                     <CalendarIcon />
-                                    {promotion.endTime
-                                    ? format(new Date(promotion.endTime), "PPP")
+                                    {transaction.endTime
+                                    ? format(new Date(transaction.endTime), "PPP")
                                     : "Pick a date"}
                                 </Button>
                                 </PopoverTrigger>
@@ -203,7 +203,7 @@ export function CreatePromotionPage() {
                                 <Calendar
                                     mode="single"
                                     selected={
-                                    promotion.endTime ? new Date(promotion.endTime) : undefined
+                                    transaction.endTime ? new Date(transaction.endTime) : undefined
                                     }
                                     onSelect={(date) => handleDateSelect("endTime", date)}
                                 />
@@ -213,8 +213,8 @@ export function CreatePromotionPage() {
                             {/* Time Select */}
                             <Select
                                 value={
-                                promotion.endTime
-                                    ? format(new Date(promotion.endTime), "HH:mm")
+                                transaction.endTime
+                                    ? format(new Date(transaction.endTime), "HH:mm")
                                     : ""
                                 }
                                 onValueChange={(value) => handleTimeChange("endTime", value)}
@@ -245,7 +245,7 @@ export function CreatePromotionPage() {
                         <Input
                         id="minSpending"
                         name="minSpending"
-                        value={promotion.minSpending ?? ""}
+                        value={transaction.minSpending ?? ""}
                         onChange={handleChange}
                         disabled={loading}
                         />
@@ -257,7 +257,7 @@ export function CreatePromotionPage() {
                         id="rate"
                         name="rate"
                         type="number"
-                        value={promotion.rate ?? ""}
+                        value={transaction.rate ?? ""}
                         onChange={handleChange}
                         disabled={loading}
                         />
@@ -269,7 +269,7 @@ export function CreatePromotionPage() {
                         id="points"
                         name="points"
                         type="number"
-                        value={promotion.points ?? ""}
+                        value={transaction.points ?? ""}
                         onChange={handleChange}
                         disabled={loading}
                         />
@@ -301,4 +301,4 @@ export function CreatePromotionPage() {
     );
 }
 
-export default CreatePromotionPage;
+export default CreateTransactionPage;

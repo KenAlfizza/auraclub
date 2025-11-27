@@ -1,6 +1,6 @@
 import { Home, Coins } from "lucide-react"
 
-import { Users, BadgeDollarSign, SquarePercent, Calendar} from "lucide-react"
+import { Users, CreditCard, Tag, Calendar} from "lucide-react"
 import { Link } from "react-router-dom"
 
 import {
@@ -31,12 +31,12 @@ const navigate_items = [
       {
       title: "Transactions",
       url: "#",
-      icon: BadgeDollarSign,
+      icon: CreditCard,
     },
     {
       title: "Promotions",
-      url: "#",
-      icon: SquarePercent,
+      url: "/promotions",
+      icon:   Tag,
     },
     {
       title: "Events",
@@ -48,18 +48,18 @@ const navigate_items = [
 const manage_items = [
   {
     title: "Users",
-    url: "/manage/users/all",
+    url: "/manage/users",
     icon: Users,
   },
   {
     title: "Transactions",
-    url: "#",
-    icon: BadgeDollarSign,
+    url: "/manage/transactions",
+    icon: CreditCard,
   },
   {
     title: "Promotions",
     url: "/manage/promotions",
-    icon: SquarePercent,
+    icon: Tag,
   },
   {
     title: "Events",

@@ -17,7 +17,7 @@ export function ManagePromotionPage() {
     const navigate = useNavigate();
 
     return (
-        <Layout header={<Header />}>
+        <Layout header={true} sidebar={true}>
             <div className="flex flex-col w-full h-full gap-4">
                 <Label className="text-2xl">Manage Promotion</Label>
 

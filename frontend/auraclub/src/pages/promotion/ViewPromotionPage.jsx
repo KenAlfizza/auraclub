@@ -86,7 +86,7 @@ export function ViewPromotionPage() {
     };
 
     return (
-        <Layout header={<Header />}>
+        <Layout header={true} sidebar={true}>
             <div className="flex flex-col w-full h-full gap-4">
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row items-center gap-4">

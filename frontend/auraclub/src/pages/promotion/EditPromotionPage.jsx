@@ -73,7 +73,7 @@ export function EditPromotionPage() {
     };
 
     return (
-        <Layout header={<Header />}>
+        <Layout header={true} sidebar={true}>
             <div className="flex flex-col w-full h-full gap-4">
                 <Label className="text-2xl">Edit Promotion #{promotion.id}</Label>
                 <Card className="w-full pt-4">

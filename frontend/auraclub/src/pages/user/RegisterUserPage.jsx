@@ -2,20 +2,22 @@ import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { useUser } from "@/context/UserContext"
 
-import Layout from "./Layout"
+import Layout from "../Layout"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardTitle,
+  CardDescription,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { UserPlus2 } from "lucide-react"
 
-export function RegisterPage() {
+export function RegisterUserPage() {
     const navigate = useNavigate()
 
     const {register, loading, error} = useUser()
@@ -23,7 +25,6 @@ export function RegisterPage() {
     const [utorid, setUtorid] = useState('')
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
-    const [registerError, setRegisterError] = useState('')
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -47,12 +48,18 @@ export function RegisterPage() {
     }
 
     return (
-    <Layout>
-        <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-            <CardTitle>Register a new user</CardTitle>
+    <Layout header={true} sidebar={true}>
+        <Card className="w-full max-w-md">
+        <CardHeader>
+            <div className="flex items-center justify-center gap-2">
+                <UserPlus2/>
+                <CardTitle className="text-2xl text-center">Register User</CardTitle>
+            </div>
+            <CardDescription className="text-center">
+                Enter UTORID, name, and email below
+            </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent>         
             <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
                 <div className="grid gap-2">
@@ -97,10 +104,12 @@ export function RegisterPage() {
                         required
                     />
                 </div>
-            </div>
-                <Button type="submit">
-                Register
-                </Button>
+                <div className="flex justify-end">
+                    <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200" type="submit">
+                        Register
+                    </Button>
+                </div>
+                </div>
             </form>
         </CardContent>
         </Card>
@@ -108,4 +117,4 @@ export function RegisterPage() {
   )
 }
 
-export default RegisterPage
+export default RegisterUserPage
