@@ -95,22 +95,7 @@ export const userAPI = {
       console.log('Fetch complete, user:', data)
       return data
   },
-
-  // Retrieve a single user with id
-  get: async (id) => {
-      console.log('userAPI.get called:', `${API_BASE_URL}/users/${id}`)
-      const response = await fetch(
-          `${API_BASE_URL}/users/${id}`,
-          {
-              method: "GET",
-              headers: getAuthHeaders(),
-          }
-      )
-      const data = await handleResponse(response)
-      console.log('Fetch complete, user:', data)
-      return data
-  },
-
+  
   // Patch a user with specified id
   patch: async (id, data) => {
     const url = `${API_BASE_URL}/users/${id}`;

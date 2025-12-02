@@ -48,9 +48,10 @@ export function CreatePromotionPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-        await createPromotion();
-        alert("Promotion created successfully!");
-        navigate("/dashboard");
+            await createPromotion();
+            // Change alert to created page here
+            // alert("Promotion created successfully!");
+            navigate("/dashboard");
         } catch (err) {
             console.error(err);
         }
@@ -287,7 +288,7 @@ export function CreatePromotionPage() {
                         {loading ? "Creating..." : "Create"}
                     </Button>
                     <Button
-                        onClick={() => navigate("/dashboard")}
+                        onClick={() => navigate("/manage/promotions")}
                         className="bg-[#D46E6E]"
                     >
                         Discard

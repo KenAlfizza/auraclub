@@ -40,11 +40,6 @@ export function LoginPage() {
 
         try {
         const data = await login(utorid, password)
-
-
-
-
-
         // Login successful, redirect to profile
         navigate('/dashboard')
         } catch (err) {

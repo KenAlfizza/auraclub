@@ -21,18 +21,18 @@ export function ManageTransactionPage() {
             <div className="flex flex-col w-full h-full gap-4">
                 <Label className="text-2xl">Manage Transaction</Label>
 
-                <div className="flex flex-row w-full gap-4">
+                <div className="flex flex-row w-full gap-4 text-center">
 
-                    <Card onClick={() => navigate("/manage/transactions/create")}
+                    <Card onClick={() => navigate("/manage/transactions/purchase/create")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
                             <PlusCircle className="scale-125"/>
-                            <Label>Create Transaction</Label>
+                            <Label>Create Purchase Transaction</Label>
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/manage/transactions/create")}
+                    <Card onClick={() => navigate("/manage/transactions/adjustment/create")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
@@ -41,7 +41,7 @@ export function ManageTransactionPage() {
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/manage/transactions/create")}
+                    <Card onClick={() => navigate("/manage/transactions/transfer/create")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
@@ -50,7 +50,16 @@ export function ManageTransactionPage() {
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/manage/transactions/create")}
+                    <Card onClick={() => navigate("/manage/transactions/redemption/create")}
+                        className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
+                        >
+                        <CardContent className="flex flex-col items-center gap-4 p-8">
+                            <PlusCircle className="scale-125"/>
+                            <Label>Create Redemption</Label>
+                        </CardContent>
+                    </Card>
+
+                    <Card onClick={() => navigate("/manage/transactions/redemption/process")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
