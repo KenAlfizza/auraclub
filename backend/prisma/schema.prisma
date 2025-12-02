@@ -45,11 +45,12 @@ model User {
   loginToken  LoginToken?
   resetToken  ResetToken?
 
-  transactions        Transaction[] @relation("UserTransactions")
-  createdTransactions Transaction[] @relation("UserCreatedTransactions")
-  processedTransactions Transaction[] @relation("UserProcessedTransactions")
+  transactionsUser            Transaction[] @relation("UserTransactions")           // Transactions associated with the user (recipient/subject)
+  transactionsCreator         Transaction[] @relation("UserCreatedTransactions")    // Transactions created by this user (e.g., cashier/regular user)
+  transactionsProcessor       Transaction[] @relation("UserProcessedTransactions")  // Transactions processed by this user (e.g., cashier processing redemption)
 
-  promotions  Promotion[]
+  // Tracks which one-time promotions the user has used. This is necessary for dynamic filtering of "available" promotions
+  promotionsUsed Promotion[]  @relation("UserPromotionsUsed")
 
   createdAt   DateTime       @default(now())
   lastLogin   DateTime?
@@ -84,6 +85,8 @@ model Transaction {
   spent         Float? 
   redeemed      Int?
 
+  promotions    Promotion[]  
+
   suspicious    Boolean           @default(false)
   remark        String?
 
@@ -109,5 +112,8 @@ model Promotion {
   rate          Float?
   points        Int?
 
-  usedBy        User[]
+  usedBy        User[]  @relation("UserPromotionsUsed")
+  transactions  Transaction[] 
+
+  createdAt     DateTime    @default(now())
 }

@@ -94,23 +94,26 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
     }
 
     // Filter by verified
-    if (req.query.verified !== undefined) {
-        if (verified !== 'true' 
-        && verified !== true
-        && verified !== 'false'
-        && verified !== false) {
+    if (req.query.verified != null) {
+        let verified = req.query.verified;
+
+        // Normalize to string values "true" or "false"
+        if (verified === true) verified = "true";
+        if (verified === false) verified = "false";
+
+        // Validate
+        if (verified !== "true" && verified !== "false") {
             return res.status(400).json({ error: "verified must be a boolean value" });
         }
 
-        if (verified !== 'true' || verified !== true) {
-            attibuteComparisons.verified = true;
-        } else {
-            attibuteComparisons.verified = false;
-        }
+        // Convert to actual boolean
+        attibuteComparisons.verified = (verified === "true");
     }
 
+
+
     // Filter by activated (based on lastLogin)
-    if (req.query.activated !== undefined) {
+    if (req.query.activated != null) {
         const activated = req.query.activated === "true";
         attibuteComparisons.lastLogin = activated ? { not: null } : { equals: null };
     }
@@ -160,44 +163,58 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
 });
 
 // Get the current logged in user info
-router.get('/me', authenticate, checkClearance('regular'), async (req, res) => {
-    const userMeId = parseInt(req.user.id);
-    if (!userMeId || isNaN(userMeId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-    }
-    
+router.get("/me", authenticate, async (req, res) => {
     try {
+        const userId = req.user.id;
+
+        // 1. Fetch user + promotions used
         const userMe = await prisma.user.findFirst({
-            where: {id: userMeId},
-            include: {
-                promotions: true,
-            }
+            where: { id: userId },
+            include: { promotionsUsed: true },
         });
 
-        if (!userMe) return res.status(404).json({message: "User not found"});
-        
-        const result = {
+        if (!userMe) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // 2. Extract used promotion IDs
+        const usedPromotionIds = userMe.promotionsUsed.map(p => p.id);
+
+        // 3. Fetch available promotions (not used)
+        const availablePromotions = await prisma.promotion.findMany({
+            where: {
+                id: { notIn: usedPromotionIds.length ? usedPromotionIds : [0] },
+                startTime: { lte: new Date() },
+                endTime: { gte: new Date() },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        // 4. Respond with used + available separately
+        return res.json({
             id: userMe.id,
             utorid: userMe.utorid,
             name: userMe.name,
             email: userMe.email,
-            birthday: userMe.birthday ? userMe.birthday.toISOString().split('T')[0] : null,
+            birthday: userMe.birthday,
             role: userMe.role,
             points: userMe.points,
             createdAt: userMe.createdAt,
             lastLogin: userMe.lastLogin,
             verified: userMe.verified,
             avatarUrl: userMe.avatarUrl,
-            promotions: userMe.promotions ? userMe.promotions : [],
-        };
+            promotions: {
+                used: userMe.promotionsUsed,
+                available: availablePromotions
+            }
+        });
 
-        return res.json(result);
-
-    } catch (err) {
-        console.error('Error fetching user', err);
-        return res.status(500).json({message:'Internal server error'})
+    } catch (error) {
+        console.error("GET /me error:", error);
+        return res.status(500).json({ error: "Internal server error" });
     }
 });
+
 
 // Patch the current logged in user info
 router.patch('/me', authenticate, checkClearance('regular'), async (req, res) => {
@@ -581,27 +598,60 @@ router.get("/me/transactions", authenticate, checkClearance('regular'), async (r
 // Retrieve a specific user
 router.get('/:userId', authenticate, checkClearance('cashier'), async (req, res) => {
     const userId = parseInt(req.params.userId);
+    const now = new Date();
     try {
+        // Fetch user including used promotions
         const user = await prisma.user.findFirst({
-            where: {id: userId},
+            where: { id: userId },
             include: {
-                promotions: true,
+                promotionsUsed: {
+                    select: {
+                        id: true,
+                        name: true,
+                        minSpending: true,
+                        rate: true,
+                        points: true,
+                    }
+                }
             }
         });
+
         if (!user) {
-            return res.status(404).json({message:'User is not found'})
+            return res.status(404).json({ message: 'User not found' });
         }
-        
+
+        // Extract used promotion IDs
+        const usedPromotionIds = user.promotionsUsed.map(p => p.id);
+
+        // Fetch available promotions (onetime, active, not used)
+        const availablePromotions = await prisma.promotion.findMany({
+            where: {
+                type: 'onetime',
+                startTime: { lte: now },
+                endTime: { gte: now },
+                id: { notIn: usedPromotionIds }
+            },
+            select: {
+                id: true,
+                name: true,
+                minSpending: true,
+                rate: true,
+                points: true,
+            },
+        });
+
         const result = {
             id: user.id,
             utorid: user.utorid,
             name: user.name,
             points: user.points,
             verified: user.verified,
-            promotions: user.promotions ? user.promotions : [],
+            promotions: {
+                used: user.promotionsUsed,
+                available: availablePromotions
+            }
         };
 
-        // Check clearance manager or higher 
         const isManagerOrHigher = ['manager', 'superuser'].includes(req.user.role);
         if (isManagerOrHigher) {
             result.email = user.email;
@@ -610,16 +660,16 @@ router.get('/:userId', authenticate, checkClearance('cashier'), async (req, res)
             result.createdAt = user.createdAt;
             result.lastLogin = user.lastLogin;
             result.avatarUrl = user.avatarUrl;
+            result.suspicious = user.suspicious;
         }
 
         return res.json(result);
 
     } catch (err) {
         console.error('Error fetching user', err);
-        return res.status(500).json({message:'Internal server error'})
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
-
 
 // Update a specific user's various statuses and some information
 router.patch('/:userId', authenticate, checkClearance('manager'), async (req, res) => {

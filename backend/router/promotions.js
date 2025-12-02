@@ -42,18 +42,19 @@ router.post('/', authenticate, checkClearance('manager'), async (req, res) => {
     if (start < now) return res.status(400).json({ message: 'startTime must not be in the past.' });
     if (end <= start) return res.status(400).json({ message: 'endTime must be after startTime.' });
 
-    // Check minSpending is valid
-    if (minSpending !== undefined && (typeof minSpending !== 'number' || minSpending < 0)) {
-        return res.status(400).json({ message: 'minSpending must be positive numeric value' });
-    }
-    // Check rate is valid
-    if (rate !== undefined && (typeof rate !== 'number' || rate < 0)) {
-        return res.status(400).json({ message: 'rate must be positive numeric value' });
+    // Check minSpending is valid (only if not null or undefined)
+    if (minSpending != null && (typeof minSpending !== 'number' || minSpending < 0)) {
+        return res.status(400).json({ message: 'minSpending must be a positive numeric value' });
     }
 
-    // Check points is valid
-    if (points !== undefined && (typeof points !== 'number' || points < 0)) {
-        return res.status(400).json({ message: 'points must be positive integer value' });
+    // Check rate is valid (only if not null or undefined)
+    if (rate != null && (typeof rate !== 'number' || rate < 0)) {
+        return res.status(400).json({ message: 'rate must be a positive numeric value' });
+    }
+
+    // Check points is valid (only if not null or undefined)
+    if (points != null && (typeof points !== 'number' || points < 0)) {
+        return res.status(400).json({ message: 'points must be a positive integer value' });
     }
 
     try {
@@ -97,13 +98,13 @@ router.get("/", authenticate, async (req, res) => {
     const started = req.query.started;
     const ended = req.query.ended;
     
-    // Pagination
-    if (typeof page !== 'number' || page < 1) {
-        return res.status(400).json({message:"Page number must be positive integer"})
+    // Validation
+    if (isNaN(page) || page < 1) {
+        return res.status(400).json({ message: "Page number must be a positive integer" });
     }
 
-    if (typeof limit !== 'number' || limit < 1) {
-        return res.status(400).json({message:"Limit number must be positive integer"})
+    if (isNaN(limit) || limit < 1) {
+        return res.status(400).json({ message: "Limit number must be a positive integer" });
     }
 
     const pageNum = parseInt(page) || 1;
@@ -119,7 +120,11 @@ router.get("/", authenticate, async (req, res) => {
     }
     // Filter by type
     if (type) {
-        attributeFilter.type = type;
+        if (type === "onetime" || type ==="automatic"){
+            attributeFilter.type = type;
+        } else {
+            return res.status(400).json({message: "type must be onetime or automatic"})
+        }
     }
 
     const now = new Date();
@@ -297,11 +302,13 @@ router.patch('/:promotionId', authenticate, checkClearance('manager'), async (re
             updatedAttributes.description = description;
         }
         // Check type is valid
-        if (type !== undefined) {
-            if (type !== "automatic" && type !== "one-time") {
-                return res.status(400).json({ message: 'Type can only be "automatic" or "one-time"'});
+        if (type != null) {
+            let typeValid = type
+            if (typeValid === 'one-time') { typeValid = 'onetime'}
+            if (typeValid !== "automatic" && typeValid !== "onetime") {
+                return res.status(400).json({ message: 'Type can only be "automatic" or "onetime"'});
             }
-            updatedAttributes.type = type === "one-time" ? "onetime" : type;
+            updatedAttributes.type = typeValid;
         }
         
         // Check startTime is valid
@@ -354,31 +361,25 @@ router.patch('/:promotionId', authenticate, checkClearance('manager'), async (re
             updatedAttributes.endTime = newEnd;
         }
 
-        // Check minSpending is valid
-        if (minSpending !== undefined) {
-            if (typeof minSpending !== 'number' || minSpending < 0) {
-                return res.status(400).json({ message: 'minSpending must be positive numeric value' });
-            } else {
-                updatedAttributes.minSpending = minSpending;
-            }
-        } 
-        
-        // Check rate is valid
-        if (rate !== undefined) { 
-            if (typeof rate !== 'number' || rate < 0) {
-                return res.status(400).json({ message: 'rate must be positive numeric value' });
-            } else {
-                updatedAttributes.rate = rate;
-            }
+        // Convert to numbers and validate
+        const minSpendingNum = minSpending != null ? parseFloat(minSpending) : null;
+        if (minSpendingNum != null && (isNaN(minSpendingNum) || minSpendingNum < 0)) {
+            return res.status(400).json({ message: 'minSpending must be a positive numeric value' });
+        } else {
+            updatedAttributes.minSpending = minSpendingNum;
         }
-        
-        // Check points is valid
-        if (points !== undefined) {
-            if (!Number.isInteger(points) || points < 0) {
-                return res.status(400).json({ message: 'points must be positive integer value' });
-            } else {
-                updatedAttributes.points = points;
-            }
+        const rateNum = rate != null ? parseFloat(rate) : null;
+        if (rateNum != null && (isNaN(rateNum) || rateNum < 0)) {
+            return res.status(400).json({ message: 'rate must be a positive numeric value' });
+        } else {
+            updatedAttributes.rate = rateNum;
+        }
+
+        const pointsNum = points != null ? parseInt(points) : null;
+        if (pointsNum != null && (isNaN(pointsNum) || pointsNum < 0)) {
+            return res.status(400).json({ message: 'points must be a positive integer value' });
+        } else {
+            updatedAttributes.points = pointsNum;
         }
 
         // Check if any field is updated

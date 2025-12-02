@@ -20,11 +20,19 @@ const port = (() => {
 
 const express = require("express");
 const app = express();
+const cors = require('cors')
 
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 app.use(express.json());
+
+// In your backend
+app.use(cors({
+  origin: 'http://localhost:5173' // Your Vite dev server
+}))
+
+app.use('/uploads', express.static('uploads'));
 
 // Router: Auth
 const authRouter = require('./router/auth');
