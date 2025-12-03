@@ -56,7 +56,7 @@ function App() {
         element={
             <UserProvider>
             <PromotionProvider>
-            <ViewAvailablePromotionPage />
+            <PromotionsPage />
             </PromotionProvider>
             </UserProvider>
         }

@@ -12,6 +12,7 @@ export default function AppPromotionCard({
     minSpending,
     rate,
     points,
+    clickable,
 }) {
     // Default values if no props are passed
     id = id || "ID";
@@ -22,6 +23,7 @@ export default function AppPromotionCard({
     minSpending = minSpending || "0";
     rate = rate || "0";
     points = points || "0";
+    const isClickable = clickable !== false;  // Everything except explicit false is clickable
 
     const { fetchPromotion, setPromotion } = usePromotion();
     const navigate = useNavigate();
@@ -35,15 +37,10 @@ export default function AppPromotionCard({
     
     return (
         <Card 
-            className="w-full bg-gray-200 rounded-xl shadow-sm hover:cursor-pointer hover:shadow-md transition-shadow"
-            onClick={handleClickPromotion}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    handleClickPromotion(e);
-                }
-            }}
+            className="w-full bg-white rounded-xl shadow-sm hover:cursor-pointer hover:shadow-md transition-shadow"
+            onClick={isClickable ? handleClickPromotion : undefined}
+            role={isClickable ? "button" : undefined}
+            tabIndex={isClickable ? 0 : undefined}
         >
             <CardHeader>
                 <h2 className="text-base font-bold">Promotion #{id}</h2>
@@ -73,4 +70,4 @@ export default function AppPromotionCard({
             </CardContent>
         </Card>
     );
-}
+}       
