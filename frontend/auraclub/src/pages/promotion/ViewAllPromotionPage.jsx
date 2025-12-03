@@ -56,7 +56,7 @@ export function ViewAllPromotionPage() {
     const [promotions, setPromotions] = useState([]);
     const [activePage, setActivePage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const itemsPerPage = 6;
+    const itemsPerPage = 9;
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
   

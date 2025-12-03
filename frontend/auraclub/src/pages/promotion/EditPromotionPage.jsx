@@ -24,6 +24,7 @@ import {
 
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -75,7 +76,10 @@ export function EditPromotionPage() {
     return (
         <Layout header={true} sidebar={true}>
             <div className="flex flex-col w-full h-full gap-4">
-                <Label className="text-2xl">Edit Promotion #{promotion.id}</Label>
+                <div className="flex flex-row items-center gap-4">
+                        <ChevronLeft className="hover:cursor-pointer scale-125" onClick={() => navigate(-1)}/>
+                        <Label className="text-2xl">Edit Promotion #{promotion.id}</Label>
+                </div>
                 <Card className="w-full pt-4">
                 <CardContent>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">

@@ -90,7 +90,7 @@ export function ViewPromotionPage() {
             <div className="flex flex-col w-full h-full gap-4">
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row items-center gap-4">
-                        <div className="hover:cursor-pointer" onClick={() => navigate("/manage/promotions/all")}>
+                        <div className="hover:cursor-pointer" onClick={() => navigate(-1)}>
                             <ChevronLeft className="scale-125"/>
                         </div>
 
