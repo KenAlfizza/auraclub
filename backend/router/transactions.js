@@ -11,110 +11,126 @@ const authenticate = require('../middleware/authenticate');
 // Middleware: Clearance Check
 const checkClearance = require('../middleware/checkClearance');
 
-// Create a new purchase or adjustment transaction between the current logged-in user 
+// Create a new purchase or adjustment transaction between the current logged-in user
 router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
   const currentUser = req.user;
   const customerUtorid = req.body.utorid;
   const transactionType = req.body.type;
-  const transactionSpent = parseFloat(req.body.spent);
-  const transactionPromotionIds = req.body.promotionIds;
   const transactionRemark = req.body.remark || '';
 
-  // Validation
-  if (!customerUtorid || !transactionType || transactionSpent === undefined)
+  // Basic validation
+  if (!customerUtorid || !transactionType)
     return res.status(400).json({ message: "Missing required fields" });
+
   if (typeof customerUtorid !== 'string' || customerUtorid.trim() === '')
     return res.status(400).json({ message: "UTORid must be a non-empty string" });
+
   if (!["purchase", "adjustment"].includes(transactionType))
     return res.status(400).json({ message: "Invalid transaction type" });
-  if (isNaN(transactionSpent) || transactionSpent <= 0)
-    return res.status(400).json({ message: "Spent must be a positive numeric value" });
-  if (transactionPromotionIds && !Array.isArray(transactionPromotionIds))
-    return res.status(400).json({ message: "promotionIds must be an array" });
 
   try {
+    // Current user (cashier/manager) info
     const user = await prisma.user.findFirst({ where: { id: currentUser.id } });
     if (!user) return res.status(404).json({ message: "User creating transaction not found" });
 
+    // Customer info
     const customer = await prisma.user.findFirst({ where: { utorid: customerUtorid } });
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    // Validate promotions
-    let promotions = [];
-    if (transactionPromotionIds?.length) {
-      promotions = await prisma.promotion.findMany({ where: { id: { in: transactionPromotionIds } } });
-      if (promotions.length !== transactionPromotionIds.length)
-        return res.status(400).json({ message: "One or more promotion IDs are invalid" });
-
-      const now = new Date();
-      for (const promo of promotions) {
-        if (promo.startTime && promo.startTime > now) 
-          return res.status(400).json({ message: `Promotion "${promo.name}" has not started yet` });
-        if (promo.endTime && promo.endTime < now) 
-          return res.status(400).json({ message: `Promotion "${promo.name}" has expired` });
-      }
-
-      // Check one-time promotions already used
-      const onetimeIds = promotions.filter(p => p.type === 'onetime').map(p => p.id);
-      if (onetimeIds.length) {
-        const alreadyUsed = await prisma.promotion.findFirst({
-          where: {
-            id: { in: onetimeIds },
-            usedBy: { some: { id: customer.id } }
-          }
-        });
-
-        if (alreadyUsed) {
-          return res.status(400).json({ message: `One-time promotion "${alreadyUsed.name}" already used` });
-        }
-      }
-
-
-      // Check min spending
-      for (const promo of promotions) {
-        if (promo.minSpending && transactionSpent < promo.minSpending)
-          return res.status(400).json({ message: `Promotion "${promo.name}" requires minimum spending of $${promo.minSpending}` });
-      }
-    }
-
-    // Create transaction data
-    let transactionData = {
-      type: transactionType,
-      spent: transactionSpent,
-      remark: transactionRemark,
-      promotions: { connect: transactionPromotionIds?.map(id => ({ id })) || [] },
-      createdBy: { connect: { id: currentUser.id } },
-      user: { connect: { id: customer.id } }
-    };
-
     if (transactionType === "purchase") {
+      // Purchase-specific fields
+      const transactionSpent = parseFloat(req.body.spent);
+      const transactionPromotionIds = req.body.promotionIds;
+
+      if (transactionSpent === undefined)
+        return res.status(400).json({ message: "Missing required field: spent" });
+      if (isNaN(transactionSpent) || transactionSpent <= 0)
+        return res.status(400).json({ message: "Spent must be a positive numeric value" });
+      if (transactionPromotionIds && !Array.isArray(transactionPromotionIds))
+        return res.status(400).json({ message: "promotionIds must be an array" });
+
       if (!["cashier", "manager", "superuser"].includes(currentUser.role))
         return res.status(403).json({ message: "Forbidden" });
 
-      const baseEarned = Math.round(transactionSpent * 100 / 25);
+      // Validate promotions
+      let promotions = [];
+      if (transactionPromotionIds?.length) {
+        promotions = await prisma.promotion.findMany({
+          where: { id: { in: transactionPromotionIds } }
+        });
+
+        if (promotions.length !== transactionPromotionIds.length)
+          return res.status(400).json({ message: "One or more promotion IDs are invalid" });
+
+        const now = new Date();
+        for (const promo of promotions) {
+          if (promo.startTime && promo.startTime > now)
+            return res.status(400).json({ message: `Promotion "${promo.name}" has not started yet` });
+          if (promo.endTime && promo.endTime < now)
+            return res.status(400).json({ message: `Promotion "${promo.name}" has expired` });
+        }
+
+        // Check one-time promotions already used
+        const onetimeIds = promotions.filter(p => p.type === 'onetime').map(p => p.id);
+        if (onetimeIds.length) {
+          const alreadyUsed = await prisma.promotion.findFirst({
+            where: {
+              id: { in: onetimeIds },
+              usedBy: { some: { id: customer.id } }
+            }
+          });
+
+          if (alreadyUsed) {
+            return res.status(400).json({ message: `One-time promotion "${alreadyUsed.name}" already used` });
+          }
+        }
+
+        // Check min spending
+        for (const promo of promotions) {
+          if (promo.minSpending && transactionSpent < promo.minSpending)
+            return res.status(400).json({ message: `Promotion "${promo.name}" requires minimum spending of $${promo.minSpending}` });
+        }
+      }
+
+      // --- POINT CALCULATION ---
+
+      // Base points: 1 point per $0.25 spent
+      const baseEarned = Math.round(transactionSpent / 0.25);
       let totalEarned = baseEarned;
 
+      // Apply promotional points
       promotions.forEach(p => {
-        if (p.rate) totalEarned += Math.round(baseEarned * (p.rate - 1));
-        else if (p.points) totalEarned += p.points;
+        if (p.rate) {
+          // Extra points = transactionSpent * rate * 100
+          totalEarned += Math.round(transactionSpent * p.rate * 100);
+        } else if (p.points) {
+          totalEarned += p.points;
+        }
       });
 
-      transactionData.amount = totalEarned;
-
-      const transaction = await prisma.transaction.create({ 
-        data: transactionData, 
-        include: { promotions: true } 
+      // Create purchase transaction
+      const transaction = await prisma.transaction.create({
+        data: {
+          type: "purchase",
+          spent: transactionSpent,
+          amount: totalEarned,
+          remark: transactionRemark,
+          promotions: { connect: transactionPromotionIds?.map(id => ({ id })) || [] },
+          createdBy: { connect: { id: currentUser.id } },
+          user: { connect: { id: customer.id } }
+        },
+        include: { promotions: true }
       });
 
-      // Update customer points if cashier is not suspicious
+      // Update customer points
       if (!user.suspicious) {
-        await prisma.user.update({ 
-          where: { id: customer.id }, 
-          data: { points: customer.points + totalEarned } 
+        await prisma.user.update({
+          where: { id: customer.id },
+          data: { points: customer.points + totalEarned }
         });
       }
 
-      // Mark promotions as used (loop)
+      // Mark promotions as used
       if (transactionPromotionIds?.length) {
         await prisma.$transaction(
           transactionPromotionIds.map(promoId =>
@@ -134,56 +150,51 @@ router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
         earned: totalEarned,
         remark: transaction.remark,
         promotionIds: transaction.promotions.map(p => p.id),
-        promotions: transaction.promotions.map(p => ({ 
-          id: p.id, 
-          name: p.name, 
-          description: p.description 
-        })),
+        promotions: transaction.promotions.map(p => ({ id: p.id, name: p.name, description: p.description })),
         createdBy: user.utorid,
         createdAt: transaction.createdAt
       });
 
     } else if (transactionType === "adjustment") {
+      // Adjustment-specific logic
       if (!["manager", "superuser"].includes(currentUser.role))
         return res.status(403).json({ message: "Forbidden" });
 
-      const adjustmentAmount = req.body.amount;
+      const adjustmentAmount = parseInt(req.body.amount);
       const adjustmentRelatedId = req.body.relatedId;
 
-      if (adjustmentAmount === undefined || !adjustmentRelatedId)
-        return res.status(400).json({ message: "Missing required fields for adjustment" });
+      if (adjustmentAmount === undefined || isNaN(adjustmentAmount))
+        return res.status(400).json({ message: "Missing or invalid field: amount" });
+      if (!adjustmentRelatedId)
+        return res.status(400).json({ message: "Missing required field: relatedId" });
 
-      const relatedTransaction = await prisma.transaction.findUnique({ 
-        where: { id: adjustmentRelatedId } 
+      const relatedTransaction = await prisma.transaction.findUnique({
+        where: { id: adjustmentRelatedId }
       });
-      if (!relatedTransaction) 
+      if (!relatedTransaction)
         return res.status(400).json({ message: "Related transaction not found" });
 
-      transactionData.type = "adjustment";
-      transactionData.amount = adjustmentAmount;
-      transactionData.relatedId = adjustmentRelatedId;
+      const newBalance = customer.points + adjustmentAmount;
+      if (newBalance < 0)
+        return res.status(400).json({ message: `Adjustment would result in negative balance (${newBalance}). Current balance: ${customer.points}` });
 
-      const transaction = await prisma.transaction.create({ 
-        data: transactionData, 
-        include: { promotions: true } 
+      const transaction = await prisma.transaction.create({
+        data: {
+          type: "adjustment",
+          amount: adjustmentAmount,
+          relatedId: adjustmentRelatedId,
+          remark: transactionRemark,
+          spent: 0,
+          createdBy: { connect: { id: currentUser.id } },
+          user: { connect: { id: customer.id } }
+        }
       });
 
-      await prisma.user.update({ 
-        where: { id: customer.id }, 
-        data: { points: customer.points + adjustmentAmount } 
+      // Update customer points
+      await prisma.user.update({
+        where: { id: customer.id },
+        data: { points: newBalance }
       });
-
-      // Mark promotions as used (loop)
-      if (transactionPromotionIds?.length) {
-        await prisma.$transaction(
-          transactionPromotionIds.map(promoId =>
-            prisma.promotion.update({
-              where: { id: promoId },
-              data: { usedBy: { connect: { id: customer.id } } }
-            })
-          )
-        );
-      }
 
       return res.status(201).json({
         id: transaction.id,
@@ -192,25 +203,18 @@ router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
         type: transaction.type,
         relatedId: transaction.relatedId,
         remark: transaction.remark,
-        promotionIds: transaction.promotions.map(p => p.id),
-        promotions: transaction.promotions.map(p => ({ 
-          id: p.id, 
-          name: p.name, 
-          description: p.description 
-        })),
         createdBy: user.utorid,
         createdAt: transaction.createdAt
       });
-
-    } else {
-      return res.status(400).json({ message: "Invalid transaction type" });
     }
 
+    return res.status(400).json({ message: "Invalid transaction type" });
   } catch (err) {
     console.error("Error creating transaction:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 //Get all transaction as a manager 
 router.get("/", authenticate, checkClearance('manager'), async (req, res) => {

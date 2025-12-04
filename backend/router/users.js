@@ -595,6 +595,208 @@ router.get("/me/transactions", authenticate, checkClearance('regular'), async (r
     }
 });
 
+// Create a new transfer transaction
+router.post('/:userId/transactions', authenticate, checkClearance('regular'), async (req, res) => {
+    const recipientId = parseInt(req.params.userId);
+    const senderId = req.user.id;
+    const type = req.body.type;
+    const amount = req.body.amount;
+    const remark = req.body.remark || "";
+
+    // 403 Forbidden if the sender is not verified
+    if (!req.user.verified) {
+        return res.status(403).json({ message: "Only verified accounts can transfer points" });
+    }
+
+    // Validate type: must be transfer
+    if (type !== undefined) {
+        if (type !== 'transfer') {
+            return res.status(400).json({ message: "type must be transfer" });
+        }
+    } else {
+        return res.status(400).json({ message: "type is required" });
+    }
+
+    // Validate amount
+    const amountNum = Number(amount);
+    if (amount !== undefined) {
+        if (isNaN(amountNum) || !Number.isInteger(amountNum) || amountNum <= 0) {
+            return res.status(400).json({ message: "amount must be a positive integer" });
+        }
+    } else {
+        return res.status(400).json({ message: "amount is required" });
+    }
+
+    // Check if sender and recipient are the same
+    if (senderId === recipientId) {
+        return res.status(400).json({ message: "Cannot transfer to yourself" });
+    }
+
+    try {
+        // Check if recipient exists
+        const recipient = await prisma.user.findUnique({
+            where: { id: recipientId }
+        });
+
+        if (!recipient) {
+            return res.status(404).json({ message: "Recipient user not found" });
+        }
+
+        // Check if sender has enough points
+        if (req.user.points < amountNum) {
+            return res.status(400).json({ message: "Insufficient points" });
+        }
+
+        const senderTransaction = await prisma.transaction.create({
+            data: {
+                type: 'transfer',
+                amount: -amountNum,
+                remark: remark,
+                user: { connect: { id: senderId } },
+                createdBy: { connect: { id: senderId } },
+                relatedId: recipientId
+            },
+            include: { user: true, createdBy: true }
+            });
+
+        // Recipient transaction
+        const recipientTransaction = await prisma.transaction.create({
+            data: {
+                type: 'transfer',
+                amount: amountNum,
+                remark: remark,
+                user: { connect: { id: recipientId } },
+                createdBy: { connect: { id: senderId } },
+                relatedId: senderId
+            },
+            include: { user: true }
+        });
+
+        const result = {
+            id: senderTransaction.id,
+            sender: senderTransaction.user.utorid,
+            recipient: recipient.utorid,
+            type: senderTransaction.type,
+            sent: Math.abs(senderTransaction.amount),
+            remark: senderTransaction.remark,
+            createdAt: senderTransaction.createdAt,
+        };
+
+        return res.status(201).json(result);
+
+    } catch (err) {
+        console.error('Error creating transfer transaction', err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Get user by utorid
+router.get('/utorid/:utorid', authenticate, checkClearance('regular'), async (req, res) => {
+    const { utorid } = req.params;
+
+    if (!utorid || typeof utorid !== 'string' || utorid.trim() === '') {
+        return res.status(400).json({ message: 'Missing or invalid utorid parameter' });
+    }
+
+    try {
+        const user = await prisma.user.findFirst({
+            where: { utorid: utorid.trim() },
+            select: {
+                id: true,
+                utorid: true,
+                name: true,
+                points: true,
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        return res.json(user);
+    } catch (err) {
+        console.error('Error looking up user by UTORID:', err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Lookup customer promotions by utorid (for cashiers)
+router.get("/promotions-lookup", authenticate, checkClearance('cashier'), async (req, res) => {
+    const utorid = req.query.utorid;
+    const now = new Date();
+
+    // Validate utorid query parameter
+    if (!utorid) {
+        return res.status(400).json({ message: 'Missing required query parameter: utorid' });
+    }
+
+    if (typeof utorid !== 'string' || utorid.trim() === '') {
+        return res.status(400).json({ message: 'Invalid utorid parameter. Must be a non-empty string.' });
+    }
+
+    try {
+        // Look up user by utorid including used promotions
+        const user = await prisma.user.findFirst({
+            where: { utorid: utorid.trim() },
+            include: {
+                promotionsUsed: {
+                    select: {
+                        id: true,
+                        name: true,
+                        minSpending: true,
+                        rate: true,
+                        points: true,
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Customer not found with the provided utorid' });
+        }
+
+        // Extract used promotion IDs
+        const usedPromotionIds = user.promotionsUsed.map(p => p.id);
+
+        // Fetch available promotions (onetime, active, not used)
+        const availablePromotions = await prisma.promotion.findMany({
+            where: {
+                type: 'onetime',
+                startTime: { lte: now },
+                endTime: { gte: now },
+                id: { notIn: usedPromotionIds.length ? usedPromotionIds : [0] }
+            },
+            select: {
+                id: true,
+                name: true,
+                minSpending: true,
+                rate: true,
+                points: true,
+            },
+        });
+
+        // Return minimal information needed for cashier workflow
+        const result = {
+            id: user.id,
+            utorid: user.utorid,
+            name: user.name,
+            points: user.points,
+            verified: user.verified,
+            promotions: {
+                used: user.promotionsUsed,
+                available: availablePromotions
+            }
+        };
+
+        return res.json(result);
+
+    } catch (err) {
+        console.error('Error in promotions lookup:', err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+
 // Retrieve a specific user
 router.get('/:userId', authenticate, checkClearance('cashier'), async (req, res) => {
     const userId = parseInt(req.params.userId);

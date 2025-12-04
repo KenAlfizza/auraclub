@@ -93,12 +93,13 @@ model Transaction {
   userId        Int
   createdById   Int
   processedById Int?
+  relatedId Int?               
 
-  user          User              @relation("UserTransactions", fields: [userId], references: [id])
-  createdBy     User              @relation("UserCreatedTransactions", fields: [createdById], references: [id])
-  processedBy   User?             @relation("UserProcessedTransactions", fields: [processedById], references: [id])
+  user          User               @relation("UserTransactions", fields: [userId], references: [id])
+  createdBy     User               @relation("UserCreatedTransactions", fields: [createdById], references: [id])
+  processedBy   User?              @relation("UserProcessedTransactions", fields: [processedById], references: [id])
 
-  createdAt     DateTime          @default(now())
+  createdAt     DateTime           @default(now())
 }
 
 model Promotion {
