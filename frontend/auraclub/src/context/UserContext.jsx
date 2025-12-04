@@ -130,7 +130,7 @@ export function UserProvider({ children }) {
         }
     }
 
-    // Function to fetch a single user by ID
+    // Fetch user by numeric ID
     const fetchUser = async (id) => {
         setLoading(true)
         setError(null)
@@ -141,6 +141,20 @@ export function UserProvider({ children }) {
         } catch (err) {
             console.error("Failed to fetch user:", err)
             setError(err.message || "Failed to load user")
+            throw err
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Fetch user by UTORID
+    const fetchUserByUtorid = async (utorid) => {
+        setLoading(true)
+        setError(null)
+        try {
+            return await userAPI.getByUtorid(utorid)
+        } catch (err) {
+            setError(err.message || "Failed to fetch user by UTORID")
             throw err
         } finally {
             setLoading(false)
@@ -172,6 +186,29 @@ export function UserProvider({ children }) {
         }
     };
 
+    const lookupUserPromotions = async (utorid) => {
+        try {
+        const data = await userAPI.lookupPromotions(utorid);
+        return data;
+        } catch (error) {
+        console.error('Error looking up user promotions:', error);
+        throw error;
+        }
+    };
+
+    // Transfer points to another user
+    const transferPoints = async (recipientId, payload) => {
+        // payload = { type: 'transfer', amount, remark }
+        try {
+            const data = await userAPI.createTransferTransaction(recipientId, payload);
+            return data;
+        } catch (err) {
+            console.error('Error creating transfer transaction:', err);
+            throw err;
+        }
+    };
+
+
     // Public interface
     const value = {
         user,
@@ -185,7 +222,12 @@ export function UserProvider({ children }) {
         fetchCurrentUser,
         fetchUsers,
         fetchUser,
+        fetchUserByUtorid,
         patchUser,
+
+        lookupUserPromotions,
+
+        transferPoints,
     }
     
     return (

@@ -24,6 +24,7 @@ import { ManageTransactionPage } from './pages/transaction/ManageTransactionPage
 import { CreatePurchaseTransactionPage } from './pages/transaction/CreatePurchaseTransactionPage'
 import { CreateAdjustmentTransactionPage } from './pages/transaction/CreateAdjustmentTransactionPage'
 import { CreateRedemptionTransactionPage } from './pages/transaction/CreateRedemptionTransactionPage'
+import { CreateTransferTransactionPage } from './pages/transaction/CreateTransferTransactionPage'
 
 import { ViewAvailablePromotionPage } from './pages/promotion/ViewAvailablePromotionPage'
 import { ManagePromotionPage } from './pages/promotion/ManagePromotionPage'
@@ -57,6 +58,17 @@ function App() {
             <UserProvider>
             <PromotionProvider>
             <PromotionsPage />
+            </PromotionProvider>
+            </UserProvider>
+        }
+      />
+
+      <Route 
+        path="/transfers/create"
+        element={
+            <UserProvider>
+            <PromotionProvider>
+            <CreateTransferTransactionPage />
             </PromotionProvider>
             </UserProvider>
         }

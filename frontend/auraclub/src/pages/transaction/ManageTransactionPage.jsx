@@ -37,16 +37,16 @@ export function ManageTransactionPage() {
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
                             <PlusCircle className="scale-125"/>
-                            <Label>Create Adjustment Transaction</Label>
+                            <Label>Adjust Transaction</Label>
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/manage/transactions/transfer/create")}
+                    <Card onClick={() => navigate("/transfers/create")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
                             <PlusCircle className="scale-125"/>
-                            <Label>Create Transfer</Label>
+                            <Label>Transfer Points</Label>
                         </CardContent>
                     </Card>
 

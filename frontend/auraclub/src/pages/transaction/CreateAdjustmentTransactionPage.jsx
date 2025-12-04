@@ -1,147 +1,432 @@
 import { useNavigate } from "react-router-dom";
 import { useTransaction } from "@/context/TransactionContext";
-
+import { useUser } from "@/context/UserContext";
 import Layout from "@/pages/Layout";
-
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardTitle,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Header from "@/components/app/appHeader";
-
+import { useState, useEffect } from "react";
+import { ChevronLeft, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export function CreateAdjustmentTransactionPage() {
-    const navigate = useNavigate();
-    const { transaction, createTransaction, loading, error } =
-        useTransaction();
+  const navigate = useNavigate();
+  const { fetchUserByUtorid } = useUser();
+  const { transaction, setTransaction, createAdjustmentTransaction, loading: txnLoading } =
+    useTransaction();
 
-    const handleChange = (e) => {
-        const { name, value, type } = e.target;
-        setTransaction((prev) => ({
-        ...prev,
-        [name]: type === "number" ? (value ? Number(value) : null) : value || null,
-        }));
-    };
+  const [utoridInput, setUtoridInput] = useState("");
+  const [userSearchResult, setUserSearchResult] = useState(null);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-        await createTransaction();
-        alert("Transaction created successfully!");
-        navigate("/dashboard");
-        } catch (err) {
-            console.error(err);
-        }
-    };
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [availablePromotions, setAvailablePromotions] = useState([]);
+  const [filteredPromotions, setFilteredPromotions] = useState([]);
+  const [selectedPromotions, setSelectedPromotions] = useState([]);
+  const [openPromotionCombobox, setOpenPromotionCombobox] = useState(false);
 
-    return (
-        <Layout header={true} sidebar={true}>
-            <div className="flex flex-col w-full h-full gap-4">
-                <Label className="text-2xl">Create Adjustment Transaction</Label>
+  const [transactionSubmitted, setTransactionSubmitted] = useState(null);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
 
-                <Card className="w-full pt-4">
-                <CardContent>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-6">
-                    {/* Name */}
-                        <div>
-                            <Label htmlFor="utorid">UTORID</Label>
-                            <Input
-                            id="utorid"
-                            name="utorid"
-                            placeholder="Customer UTORID"
-                            value={transaction.utorid ?? ""}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                            />
-                        </div>
+  // SEARCH USER
+  const searchUser = async () => {
+    if (!utoridInput.trim()) return;
 
-                        {/* Amount */}
-                        <div>
-                            <Label htmlFor="amount">Amount ($)</Label>
-                            <Input
-                            id="amount"
-                            name="amount"
-                            type="number"
-                            placeholder="$0"
-                            value={transaction.amount ?? ""}
-                            onChange={handleChange}
-                            disabled={loading}
-                            required
-                            />
-                        </div>
+    setHasSearched(true);
+    setUserSearchLoading(true);
+    setUserSearchResult(null);
+    setMessage("");
+    setMessageType("");
 
-                        
-                        {/* Optional Fields */}
-                        <div>
-                            <Label htmlFor="relatedIds">Related IDs</Label>
-                            <Input
-                            id="relatedIds"
-                            name="relatedIds"
-                            value={transaction.relatedIds ?? ""}
-                            onChange={handleChange}
-                            disabled={loading}
-                            />
-                        </div>
+    try {
+      const userData = await fetchUserByUtorid(utoridInput.trim());
+      setUserSearchResult(userData || null);
+      setAvailablePromotions(userData?.promotions?.available || []);
+    } catch (err) {
+      setUserSearchResult(null);
+      setAvailablePromotions([]);
+    } finally {
+      setUserSearchLoading(false);
+    }
+  };
 
-                        <div>
-                            <Label htmlFor="remark">Remark (Optional)</Label>
-                            <Input
-                            id="remark"
-                            name="remark"
-                            value={transaction.remark ?? ""}
-                            onChange={handleChange}
-                            disabled={loading}
-                            />
-                        </div>
+  // SELECT USER
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+    setTransaction((prev) => ({
+      ...prev,
+      utorid: user.utorid,
+      promotionIds: null,
+    }));
+    setSelectedPromotions([]);
+    setFilteredPromotions(user.promotions?.available || []);
+    setUtoridInput("");
+    setHasSearched(false);
+    setUserSearchResult(null);
+  };
 
-                        {error && <p className="text-red-500">{error}</p>}
-                        </div>
+  // CLEAR SELECTED USER
+  const clearSelectedUser = () => {
+    setSelectedUser(null);
+    setAvailablePromotions([]);
+    setFilteredPromotions([]);
+    setSelectedPromotions([]);
+    setTransaction((prev) => ({ ...prev, utorid: null, promotionIds: null }));
+  };
 
-                        <div className="flex flex-row gap-2 justify-end">
-                        <Button
-                            type="submit"
-                            className="bg-[#86D46E]"
-                            disabled={loading}
-                        >
-                            {loading ? "Creating..." : "Create"}
-                        </Button>
-                        <Button
-                            onClick={() => navigate("/manage/transactions")}
-                            className="bg-[#D46E6E]"
-                        >
-                            Discard
-                        </Button>
-                    </div>
-                </form>
-                </CardContent>
-            </Card>
-            </div>
-        </Layout>
+  // UPDATE PROMOTION IDS IN TRANSACTION
+  useEffect(() => {
+    setTransaction((prev) => ({
+      ...prev,
+      promotionIds: selectedPromotions.length > 0 ? selectedPromotions.map((p) => p.id) : null,
+    }));
+  }, [selectedPromotions, setTransaction]);
+
+  // FILTER PROMOTIONS BASED ON AMOUNT
+  useEffect(() => {
+    const amount = Number(transaction.amount) || 0;
+    setFilteredPromotions(
+      availablePromotions.filter(
+        (p) => !selectedPromotions.some((sp) => sp.id === p.id) && p.minSpending <= amount
+      )
     );
+  }, [transaction.amount, availablePromotions, selectedPromotions]);
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setTransaction((prev) => ({
+      ...prev,
+      [name]: type === "number" ? (value === "" ? null : Number(value)) : value || null,
+    }));
+  };
+
+  const handleAddPromotion = (promoId) => {
+    const promo = availablePromotions.find((p) => p.id === promoId);
+    if (promo && !selectedPromotions.some((p) => p.id === promo.id)) {
+      setSelectedPromotions([...selectedPromotions, promo]);
+    }
+  };
+
+  const handleRemovePromotion = (promoId) => {
+    setSelectedPromotions(selectedPromotions.filter((p) => p.id !== promoId));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage("");
+    setMessageType("");
+
+    if (!selectedUser) {
+      setMessage("Please select a user first");
+      setMessageType("error");
+      return;
+    }
+    if (!transaction.amount) {
+      setMessage("Please enter a valid adjustment amount");
+      setMessageType("error");
+      return;
+    }
+
+    try {
+      // Add createdAt before submission
+      setTransaction((prev) => ({ ...prev, createdAt: new Date() }));
+
+      const response = await createAdjustmentTransaction();
+      setTransactionSubmitted({ ...response, user: selectedUser });
+      setMessage("Adjustment transaction created!");
+      setMessageType("success");
+    } catch (err) {
+      setMessage(err.message || "Failed to create adjustment transaction");
+      setMessageType("error");
+    }
+  };
+
+  // SUCCESS PAGE
+  if (transactionSubmitted) {
+    return (
+      <Layout header sidebar>
+        <div className="flex flex-col w-full h-full gap-4">
+          <div className="flex flex-row items-center gap-4">
+            <ChevronLeft
+              className="hover:cursor-pointer scale-125"
+              onClick={() => navigate("/manage/transactions")}
+            />
+            <Label className="text-2xl">Transaction Adjusted</Label>
+          </div>
+
+          <Card className="w-full">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold">
+                  Transaction #{transactionSubmitted.id}
+                </h2>
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div>
+                    <p className="text-sm text-gray-500">UTORID</p>
+                    <p className="font-semibold">{transactionSubmitted.user.utorid}</p>
+                    <p className="text-sm">{transactionSubmitted.user.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Adjustment Amount</p>
+                    <p className="font-semibold">{transactionSubmitted.amount}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Related Transaction</p>
+                    <p className="font-semibold">{transactionSubmitted.relatedId}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Promotions</p>
+                    <p className="font-semibold">
+                      {transactionSubmitted.promotions?.length
+                        ? transactionSubmitted.promotions.map((p) => p.name).join(", ")
+                        : "None"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Created At</p>
+                    <p className="font-semibold">
+                      {format(new Date(transactionSubmitted.createdAt), "MM/dd/yyyy h:mma")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Remark</p>
+                    <p className="font-semibold">{transactionSubmitted.remark || "None"}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // MAIN FORM
+  return (
+    <Layout header sidebar>
+      <div className="flex flex-col w-full h-full gap-4">
+        <div className="flex flex-row items-center gap-4">
+          <ChevronLeft
+            className="hover:cursor-pointer scale-125"
+            onClick={() => navigate("/manage/transactions")}
+          />
+          <Label className="text-2xl">Adjust Transaction</Label>
+        </div>
+
+        <Card className="w-full pt-4">
+          <CardContent>
+            {message && (
+              <Alert variant={messageType === "error" ? "destructive" : "default"}>
+                <AlertDescription>{message}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex flex-col gap-4 mt-4">
+              {/* UTORID SEARCH */}
+              <div>
+                <Label htmlFor="utorid">UTORID</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="utorid"
+                    placeholder="Enter UTORID..."
+                    value={utoridInput}
+                    onChange={(e) => setUtoridInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), searchUser())}
+                    disabled={!!selectedUser} // <-- disabled if user selected
+                  />
+                  <Button
+                    type="button"
+                    onClick={searchUser}
+                    disabled={userSearchLoading || !!selectedUser} // <-- disabled if user selected
+                  >
+                    {userSearchLoading ? "Searching..." : "Search"}
+                  </Button>
+                </div>
+
+                {/* Search result */}
+                {!selectedUser && userSearchResult && !userSearchLoading && (
+                  <div
+                    className="p-3 border rounded-md hover:bg-gray-50 cursor-pointer mt-2"
+                    onClick={() => handleUserSelect(userSearchResult)}
+                  >
+                    <p className="font-medium">{userSearchResult.utorid}</p>
+                    <p className="text-sm text-gray-600">{userSearchResult.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Points: {userSearchResult.points} | Verified:{" "}
+                      {userSearchResult.verified ? "Yes" : "No"}
+                    </p>
+                    {userSearchResult.promotions?.available && (
+                      <p className="text-sm text-blue-600 mt-1">
+                        {userSearchResult.promotions.available.length} promotion(s) available
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {hasSearched && !userSearchResult && !userSearchLoading && (
+                  <p className="text-sm text-red-500 mt-1">
+                    No user found with UTORID: {utoridInput}
+                  </p>
+                )}
+
+                {selectedUser && (
+                  <div className="p-2 bg-green-50 border border-green-200 rounded-md mt-1 flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-green-700">
+                        ✓ Selected: {selectedUser.utorid} ({selectedUser.name})
+                      </p>
+                      <p className="text-xs text-green-600">
+                        Available Promotions: {availablePromotions.length}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={clearSelectedUser}>
+                      Clear
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Related Transaction */}
+              <div>
+                <Label htmlFor="relatedId">Related Transaction ID</Label>
+                <Input
+                  id="relatedId"
+                  name="relatedId"
+                  type="number"
+                  placeholder="Enter previous transaction ID"
+                  value={transaction.relatedId ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              {/* Adjustment Amount */}
+              <div>
+                <Label htmlFor="amount">Adjustment Amount</Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  placeholder="Enter adjustment amount"
+                  value={transaction.amount ?? ""}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              {/* Promotions */}
+              <div>
+                <Label htmlFor="promotions">Promotions (Optional)</Label>
+                <Popover open={openPromotionCombobox} onOpenChange={setOpenPromotionCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between min-h-10 h-auto"
+                      disabled={!selectedUser}
+                    >
+                      <div className="flex flex-wrap gap-1 flex-1 py-1">
+                        {selectedPromotions.length === 0 ? (
+                          <span className="text-muted-foreground truncate">
+                            {!selectedUser
+                              ? "Search and select user first"
+                              : availablePromotions.length === 0
+                              ? "No promotions available"
+                              : "Select promotions"}
+                          </span>
+                        ) : (
+                          selectedPromotions.map((promo) => (
+                            <div
+                              key={promo.id}
+                              className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-sm"
+                            >
+                              <span>{promo.name}</span>
+                              <span
+                                onPointerDown={(e) => (e.preventDefault(), handleRemovePromotion(promo.id))}
+                                className="hover:bg-blue-200 rounded-full p-0.5 cursor-pointer inline-flex items-center"
+                              >
+                                <X className="w-3 h-3" />
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search promotions..." />
+                      <CommandEmpty>
+                        {filteredPromotions.length === 0
+                          ? "No promotions available for this user"
+                          : "No promotions match your search"}
+                      </CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        {filteredPromotions.map((promo) => (
+                          <CommandItem key={promo.id} value={promo.name} className="flex justify-between items-center">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{promo.name}</span>
+                              <span className="text-xs text-gray-500">
+                                Rate: {promo.rate || 0}x | Min: ${promo.minSpending || 0} | Points: +{promo.points || 0}
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onPointerDown={(e) => (e.preventDefault(), handleAddPromotion(promo.id))}
+                            >
+                              Add
+                            </Button>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Remark */}
+              <div>
+                <Label htmlFor="remark">Remark (Optional)</Label>
+                <Input id="remark" name="remark" value={transaction.remark ?? ""} onChange={handleChange} />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex flex-row gap-2 justify-end">
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="bg-[#86D46E]"
+                  disabled={txnLoading || !selectedUser}
+                >
+                  {txnLoading ? "Creating..." : "Create"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => navigate("/manage/transactions")}
+                  className="bg-[#D46E6E]"
+                >
+                  Discard
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
+  );
 }
 
 export default CreateAdjustmentTransactionPage;

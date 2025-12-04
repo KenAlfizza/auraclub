@@ -31,13 +31,14 @@ function getAuthHeaders() {
 
 export const promotionAPI = {
     // Create promotion
-    create: async (name, description, type, startTime, endTime, rate, points) => {
+    create: async (name, description, type, startTime, endTime, minSpending, rate, points) => {
         console.log('promotionAPI.create called with:', 
             { "name": name, 
                 "description": description, 
                 "type": type, 
                 "startTime": startTime, 
                 "endTime": endTime, 
+                "minSpending": minSpending,
                 "rate": rate, 
                 "points": points })
         console.log('Fetching:', `${API_BASE_URL}/promotions`)
@@ -45,7 +46,7 @@ export const promotionAPI = {
         const response = await fetch(`${API_BASE_URL}/promotions`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
-                body: JSON.stringify({ name, description, type, startTime, endTime, rate, points })
+                body: JSON.stringify({ name, description, type, startTime, endTime, minSpending, rate, points })
             }
         )
 

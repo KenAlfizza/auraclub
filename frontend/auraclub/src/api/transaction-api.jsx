@@ -59,4 +59,53 @@ export const transactionAPI = {
         return handleResponse(response)
     },
 
+    // Create purchase transaction
+    createAdjustmentTransaction: async (utorid, amount, relatedId, remark, promotionIds, createdBy) => {
+        console.log('transactionAPI.create called with:', 
+            { "utorid": utorid, 
+                "amount": amount, 
+                "relatedId": relatedId,
+                "type": "adjustment", 
+                "promotionIds": promotionIds, 
+                "remark": remark,
+                "createdBy": createdBy})
+        console.log('Fetching:', `${API_BASE_URL}/transactions`)
+
+        const response = await fetch(`${API_BASE_URL}/transactions`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ 
+                    utorid,
+                    type: "adjustment",
+                    amount,
+                    relatedId,
+                    remark,
+                    promotionIds,
+                })
+            }
+        )
+
+        console.log('Create complete, response:', response)
+        return handleResponse(response)
+    },
+
+    // Fetch all transactions
+    getAll: async (query = {}) => {
+        console.log('transactionAPI.getAll called:', `${API_BASE_URL}/transactions`)
+        const params = new URLSearchParams(query).toString()    
+        console.log(
+            "transactionAPI.getAll called:",
+            `${API_BASE_URL}/transactions?${params}`
+        )
+        const response = await fetch(`${API_BASE_URL}/transactions`, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+            }
+        )
+        const transactions = await handleResponse(response)
+        console.log('Fetch complete, transactions:', transactions)
+        return transactions
+    }
+
 }
+

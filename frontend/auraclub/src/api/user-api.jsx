@@ -95,6 +95,21 @@ export const userAPI = {
       console.log('Fetch complete, user:', data)
       return data
   },
+
+  getByUtorid: async (utorid) => {
+      console.log('userAPI.fetchUserByUtorid called with:', { utorid });
+      const url = `${API_BASE_URL}/users/utorid/${encodeURIComponent(utorid)}`; // <-- new route
+      console.log('Fetching:', url);
+
+      const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      });
+
+      const data = await handleResponse(response);
+      console.log('Fetch complete, user data:', data);
+      return data;
+  },
   
   // Patch a user with specified id
   patch: async (id, data) => {
@@ -109,4 +124,38 @@ export const userAPI = {
 
     return handleResponse(response);
   },
+
+  
+  // Lookup customer promotions by utorid (for cashiers)
+  lookupPromotions: async (utorid) => {
+    console.log('userAPI.lookupPromotions called with:', { utorid })
+    const url = `${API_BASE_URL}/users/promotions-lookup?utorid=${encodeURIComponent(utorid)}`
+    console.log('Fetching:', url)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+
+    const data = await handleResponse(response)
+    console.log('Fetch complete, customer data:', data)
+    return data
+  },
+
+  // Create transfer transaction between users 
+  createTransferTransaction: async (recipientId, payload) => {
+    console.log('userAPI.createTransferTransaction called with:', { recipientId, payload });
+    const url = `${API_BASE_URL}/users/${recipientId}/transactions`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+    });
+
+    const data = await handleResponse(response)
+    console.log('Fetch complete, transfer data:', data)
+    return data
+  },
+
 }
