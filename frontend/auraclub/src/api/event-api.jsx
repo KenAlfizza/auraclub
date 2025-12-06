@@ -38,4 +38,10 @@ export const eventAPI = {
 
     return handleResponse(response);
   },
+  
+  // Get a single event
+  get: async (id) => {
+    const res = await fetch(`${API_BASE_URL}/events/${id}`);
+    return res.json();
+  },
 }

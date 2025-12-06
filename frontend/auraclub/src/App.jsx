@@ -39,7 +39,8 @@ import { TransactionProvider } from './context/TransactionContext'
 import { ViewAllTransactionPage } from './pages/transaction/ViewAllTransactionPage'
 
 import { ManageEventsPage } from './pages/event/ManageEventsPage'
-import CreateEventPage from './pages/event/CreateEventPage'
+import { CreateEventPage } from './pages/event/CreateEventPage'
+import { ViewEventPage } from './pages/event/ViewEventPage'
 import { EventProvider } from './context/EventContext'
 
 
@@ -267,6 +268,17 @@ function App() {
         path="/manage/events"
         element={
             <ManageEventsPage />
+        }
+      />
+
+      <Route
+        path="/manage/events/:id"
+        element={
+          <UserProvider>
+            <EventProvider>
+             <ViewEventPage />
+            </EventProvider>
+          </UserProvider>
         }
       />
 
