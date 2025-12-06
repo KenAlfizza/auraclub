@@ -17,7 +17,7 @@ import { useUser } from "@/context/UserContext";
 
 import { Filter, ChevronLeft } from "lucide-react";
 
-export function PromotionsPage() {
+export function MyPromotionsPage() {
     const navigate = useNavigate();
     const { user, loading, error } = useUser();
     const [availablePromotions, setAvailablePromotions] = useState([]);
@@ -55,10 +55,13 @@ export function PromotionsPage() {
         <Layout header={true} sidebar={true}>
             <div className="w-full h-full">
             <div className="flex flex-col w-full gap-4">
-                <div className="flex flex-row justify-between">
-                    <div className="flex flex-row items-center gap-4">
-                        <ChevronLeft className="hover:cursor-pointer scale-125" onClick={() => navigate("/dashboard")}/>
-                        <Label className="text-2xl">My Promotions</Label>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <ChevronLeft
+                        className="hover:cursor-pointer scale-125"
+                        onClick={() => navigate("/")}
+                        />
+                        <Label className="text-2xl font-bold">My Promotions</Label>
                     </div>
                 </div>
                 <div className="flex flex-col w-full h-full gap-4">
@@ -112,4 +115,4 @@ export function PromotionsPage() {
     );
 }
 
-export default PromotionsPage
+export default MyPromotionsPage

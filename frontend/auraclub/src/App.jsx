@@ -7,7 +7,8 @@ import { PromotionProvider } from './context/PromotionContext'
 
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { DashboardPage } from './pages/DashboardPage'
-import { PromotionsPage } from './pages/profile/PromotionsPage'
+import { MyPromotionsPage } from './pages/profile/MyPromotionsPage'
+import { MyTransactionsPage } from './pages/profile/MyTransactionsPage'
 
 import { ChangePasswordPage} from './pages/profile/ChangePasswordPage'
 import { ResetPasswordPage} from './pages/profile/ResetPaswordPage'
@@ -23,8 +24,10 @@ import { RegisterUserPage } from './pages/user/RegisterUserPage'
 import { ManageTransactionPage } from './pages/transaction/ManageTransactionPage'
 import { CreatePurchaseTransactionPage } from './pages/transaction/CreatePurchaseTransactionPage'
 import { CreateAdjustmentTransactionPage } from './pages/transaction/CreateAdjustmentTransactionPage'
-import { CreateRedemptionTransactionPage } from './pages/transaction/CreateRedemptionTransactionPage'
 import { CreateTransferTransactionPage } from './pages/transaction/CreateTransferTransactionPage'
+import { CreateRedemptionTransactionPage } from './pages/transaction/CreateRedemptionTransactionPage'
+import { ProcessRedemptionPage } from './pages/transaction/ProcessRedemptionPage'
+import { ViewTransactionPage } from './pages/transaction/ViewTransactionPage'
 
 import { ViewAvailablePromotionPage } from './pages/promotion/ViewAvailablePromotionPage'
 import { ManagePromotionPage } from './pages/promotion/ManagePromotionPage'
@@ -33,6 +36,7 @@ import { CreatePromotionPage } from './pages/promotion/CreatePromotionPage'
 import { ViewAllPromotionPage } from './pages/promotion/ViewAllPromotionPage'
 import { EditPromotionPage} from './pages/promotion/EditPromotionPage'
 import { TransactionProvider } from './context/TransactionContext'
+import ViewAllTransactionPage from './pages/transaction/ViewAllTransactionPage'
 
 
 function App() {
@@ -57,14 +61,14 @@ function App() {
         element={
             <UserProvider>
             <PromotionProvider>
-            <PromotionsPage />
+            <MyPromotionsPage />
             </PromotionProvider>
             </UserProvider>
         }
       />
 
       <Route 
-        path="/transfers/create"
+        path="/points/transfer"
         element={
             <UserProvider>
             <PromotionProvider>
@@ -73,6 +77,31 @@ function App() {
             </UserProvider>
         }
       />
+
+      <Route 
+        path="/transactions"
+        element={
+            <UserProvider>
+            <TransactionProvider>
+            <MyTransactionsPage />
+            </TransactionProvider>
+            </UserProvider>
+        }
+      />
+
+
+      {/** User points */}
+      <Route
+        path="/points/redemption/create"
+        element={
+          <UserProvider>
+            <TransactionProvider>
+              <CreateRedemptionTransactionPage />
+            </TransactionProvider>
+          </UserProvider>
+        }
+      />
+
 
       {/** Manage Users */}
       <Route 
@@ -129,6 +158,17 @@ function App() {
       />
 
       <Route
+        path="/manage/transactions/view/:transactionId"
+        element={
+          <UserProvider>
+            <TransactionProvider>
+              <ViewTransactionPage />
+            </TransactionProvider>
+          </UserProvider>
+        }
+      />
+
+      <Route
         path="/manage/transactions/purchase/create"
         element={
           <UserProvider>
@@ -151,16 +191,26 @@ function App() {
       />
 
       <Route
-        path="/manage/transactions/redemption/create"
+        path="/manage/transactions/all"
         element={
           <UserProvider>
             <TransactionProvider>
-              <CreateRedemptionTransactionPage />
+              <ViewAllTransactionPage />
             </TransactionProvider>
           </UserProvider>
         }
       />
 
+      <Route
+        path="/points/redemption/process"
+        element={
+          <UserProvider>
+            <TransactionProvider>
+              <ProcessRedemptionPage />
+            </TransactionProvider>
+          </UserProvider>
+        }
+      />
 
       {/** Manage Promotions */}
       <Route

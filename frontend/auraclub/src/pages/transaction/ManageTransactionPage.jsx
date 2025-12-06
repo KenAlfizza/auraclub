@@ -21,7 +21,7 @@ export function ManageTransactionPage() {
             <div className="flex flex-col w-full h-full gap-4">
                 <Label className="text-2xl">Manage Transaction</Label>
 
-                <div className="flex flex-row w-full gap-4 text-center">
+                <div className="grid grid-cols-4 w-full gap-4 text-center">
 
                     <Card onClick={() => navigate("/manage/transactions/purchase/create")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
@@ -41,7 +41,7 @@ export function ManageTransactionPage() {
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/transfers/create")}
+                    <Card onClick={() => navigate("/points/transfer")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
@@ -50,7 +50,7 @@ export function ManageTransactionPage() {
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/manage/transactions/redemption/create")}
+                    <Card onClick={() => navigate("/points/redemption/create")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
@@ -59,7 +59,7 @@ export function ManageTransactionPage() {
                         </CardContent>
                     </Card>
 
-                    <Card onClick={() => navigate("/manage/transactions/redemption/process")}
+                    <Card onClick={() => navigate("/points/redemption/process")}
                         className="w-full cursor-pointer hover:bg-blue-400 transition-colors duration-200"
                         >
                         <CardContent className="flex flex-col items-center gap-4 p-8">
@@ -76,7 +76,6 @@ export function ManageTransactionPage() {
                             <Label>Edit/View All</Label>
                         </CardContent>
                     </Card>
-
                 </div>
             </div>
 

@@ -40,7 +40,6 @@ export default function AppPromotionCard({
             className="w-full bg-white rounded-xl shadow-sm hover:cursor-pointer hover:shadow-md transition-shadow"
             onClick={isClickable ? handleClickPromotion : undefined}
             role={isClickable ? "button" : undefined}
-            tabIndex={isClickable ? 0 : undefined}
         >
             <CardHeader>
                 <h2 className="text-base font-bold">Promotion #{id}</h2>
@@ -69,5 +68,5 @@ export default function AppPromotionCard({
                 </div>
             </CardContent>
         </Card>
-    );
+    )
 }       

@@ -30,7 +30,7 @@ const navigate_items = [
 
       {
       title: "Transactions",
-      url: "#",
+      url: "/transactions",
       icon: CreditCard,
     },
     {
