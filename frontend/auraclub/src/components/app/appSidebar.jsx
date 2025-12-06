@@ -63,7 +63,7 @@ const manage_items = [
   },
   {
     title: "Events",
-    url: "#",
+    url: "/manage/events",
     icon: Calendar,
   },
 ]

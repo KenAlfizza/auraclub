@@ -36,7 +36,11 @@ import { CreatePromotionPage } from './pages/promotion/CreatePromotionPage'
 import { ViewAllPromotionPage } from './pages/promotion/ViewAllPromotionPage'
 import { EditPromotionPage} from './pages/promotion/EditPromotionPage'
 import { TransactionProvider } from './context/TransactionContext'
-import ViewAllTransactionPage from './pages/transaction/ViewAllTransactionPage'
+import { ViewAllTransactionPage } from './pages/transaction/ViewAllTransactionPage'
+
+import { ManageEventsPage } from './pages/event/ManageEventsPage'
+import CreateEventPage from './pages/event/CreateEventPage'
+import { EventProvider } from './context/EventContext'
 
 
 function App() {
@@ -258,6 +262,24 @@ function App() {
         }
       />
 
+      {/** Manage Events */}
+      <Route
+        path="/manage/events"
+        element={
+            <ManageEventsPage />
+        }
+      />
+
+      <Route
+        path="/manage/events/create"
+        element={
+          <UserProvider>
+            <EventProvider>
+              <CreateEventPage/>
+            </EventProvider>
+          </UserProvider>
+        }
+      />
     </Routes>
   )
 }
