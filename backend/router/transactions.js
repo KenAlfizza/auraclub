@@ -289,24 +289,24 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
 
   // Validate amount - must be used with operator
   if (amount !== undefined && !operator) {
-    return res.status(400).json({ error: "amount must be used with operator" });
+    return res.status(400).json({ error: "Amount must be used with operator" });
   }
 
   // Validate operator - must be used with amount
   if (operator !== undefined && amount === undefined) {
-    return res.status(400).json({ error: "operator must be used with amount" });
+    return res.status(400).json({ error: "Operator must be used with amount" });
   }
 
   // Validate operator - must be 'gte' or 'lte' if provided
   if (operator !== undefined && operator !== 'gte' && operator !== 'lte') {
-    return res.status(400).json({ error: "operator must be either 'gte' or 'lte'" });
+    return res.status(400).json({ error: "Operator must be either 'gte' or 'lte'" });
   }
 
   // Validate amount - must be a valid number if provided
   if (amount !== undefined) {
     const amountNum = Number(amount);
     if (isNaN(amountNum)) {
-      return res.status(400).json({ error: "amount must be a valid number" });
+      return res.status(400).json({ error: "Amount must be a valid number" });
     }
     filterBy.amount = amountNum;
   }
@@ -358,24 +358,60 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
               include: {
                 user: true,           // Include user (customer)
                 createdBy: true       // Include creator (cashier/manager)
-              }
+              },
+              orderBy: {
+                createdAt: "desc", // or "asc"
+              },
           }),
       ]);
 
-      const results = transactions.map(transaction => ({
-        id: transaction.id,
-        utorid: transaction.user.utorid,  // Get from included user
-        amount: transaction.amount,
-        type: transaction.type,
-        spent: transaction.spent,
-        promotionIds: transaction.promotionIds,
-        suspicious: transaction.suspicious || false,
-        remark: transaction.remark,
-        createdBy: transaction.createdBy.utorid,  // Get from included creator
-        ...(transaction.relatedId && { relatedId: transaction.relatedId }),  // Include if exists
-        ...(transaction.type === 'redemption' && transaction.redeemed && { redeemed: transaction.redeemed })  // Include redeemed for redemptions
+      const results = await Promise.all(
+        transactions.map(async (transaction) => {
+          // Prepare sender/recipient for transfers
+          let sender = null;
+          let recipient = null;
 
-      }));
+          if (transaction.type === "transfer" && transaction.relatedId) {
+            // Fetch the related user
+            const relatedUser = await prisma.user.findUnique({
+              where: { id: transaction.relatedId },
+              select: { utorid: true }
+            });
+
+            if (relatedUser) {
+              if (transaction.amount < 0) {
+                // Primary user sent points
+                sender = transaction.user.utorid;
+                recipient = relatedUser.utorid;
+              } else {
+                // Primary user received points
+                sender = relatedUser.utorid;
+                recipient = transaction.user.utorid;
+              }
+            }
+          }
+
+          return {
+            id: transaction.id,
+            utorid: transaction.user.utorid,
+            amount: transaction.amount,
+            type: transaction.type,
+            spent: transaction.spent,
+            promotionIds: transaction.promotionIds,
+            suspicious: transaction.suspicious || false,
+            remark: transaction.remark,
+            createdBy: transaction.createdBy.utorid,
+
+            // Add sender/recipient if transfer
+            ...(sender && { sender }),
+            ...(recipient && { recipient }),
+
+            ...(transaction.relatedId && { relatedId: transaction.relatedId }),
+            ...(transaction.type === "redemption" &&
+              transaction.redeemed && { redeemed: transaction.redeemed }),
+          };
+        })
+      );
 
       // Respond with count and results
       return res.json({ count, results });
@@ -387,42 +423,79 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
 
 });
 
-
+// Get transaction by id
 router.get("/:transactionId", authenticate, checkClearance('manager'), async (req, res) => {
   const transactionId = parseInt(req.params.transactionId);
 
+  if (isNaN(transactionId)) {
+    return res.status(400).json({ message: "Invalid transaction ID" });
+  }
+
   try {
-    // Get the transaction from DB
+    // Fetch transaction with related users
     const transaction = await prisma.transaction.findFirst({
-      where: {id: transactionId},
+      where: { id: transactionId },
       include: {
-        user: true,           // Include user (customer)
-        createdBy: true       // Include creator (cashier/manager)
+        user: true,       // The primary user
+        createdBy: true,  // Creator (cashier/manager)
+        processedBy: true // Processor (cashier/manager)
       }
-    })
+    });
 
     if (!transaction) {
-      return res.status(404).json({message: "transaction is not found"})
+      return res.status(404).json({ message: "Transaction not found" });
+    }
+
+    let sender = null;
+    let recipient = null;
+
+    // If it's a transfer, determine sender/recipient based on amount & relatedId
+    if (transaction.type === "transfer" && transaction.relatedId) {
+      const relatedUser = await prisma.user.findUnique({
+        where: { id: transaction.relatedId },
+        select: { utorid: true }
+      });
+
+      if (relatedUser) {
+        if (transaction.amount < 0) {
+          // Primary user sent points
+          sender = transaction.user.utorid;
+          recipient = relatedUser.utorid;
+        } else {
+          // Primary user received points
+          sender = relatedUser.utorid;
+          recipient = transaction.user.utorid;
+        }
+      }
     }
 
     const result = {
       id: transaction.id,
-      utorid: transaction.user.utorid,
+      utorid: transaction.user?.utorid || "Unknown",
       type: transaction.type,
       spent: transaction.spent,
       amount: transaction.amount,
       promotionIds: transaction.promotionIds,
-      suspicious: transaction.suspicious,
+      suspicious: transaction.suspicious || false,
       remark: transaction.remark,
-      createdBy: transaction.createdBy.utorid
-    }
+      createdAt: transaction.createdAt,
+      createdBy: transaction.createdBy?.utorid || "Unknown",
+      processedBy: transaction.processedBy?.utorid || null,
+      ...(sender && { sender }),
+      ...(recipient && { recipient }),
+      ...(transaction.relatedId && { relatedId: transaction.relatedId }),
+      ...(transaction.type === "redemption" && transaction.redeemed && { redeemed: transaction.redeemed })
+    };
 
     return res.status(200).json(result);
+
   } catch (err) {
-      console.error("Error updating transaction", err);
-      return res.status(500).json({ message: "Internal server error" });
+    console.error("Error fetching transaction", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
 
 // Set or unset a transaction as being suspicious
 router.patch("/:transactionId/suspicious", authenticate, checkClearance('manager'), async (req, res) => {
@@ -481,73 +554,68 @@ router.patch("/:transactionId/processed", authenticate, checkClearance('cashier'
   const processed = req.body.processed;
 
   // Validate processed field
-  if (processed !== undefined) {
-    if (processed !== 'true' 
-      && processed !== true) {
-      return res.status(400).json({ error: "processed can only be true" });
-    }
-  } else {
+  if (processed === undefined) {
     return res.status(400).json({ error: "processed field required" });
+  }
+  if (processed !== true && processed !== "true") {
+    return res.status(400).json({ error: "processed can only be true" });
   }
 
   try {
-    // Check the transaction associated with id
-    const currentTransaction = await prisma.transaction.findFirst({
-      where: {id: transactionId}
+    // Find the transaction
+    const transaction = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { user: true, createdBy: true, processedBy: true }
     });
 
-    if (!currentTransaction) {
+    if (!transaction) {
       return res.status(404).json({ message: "Transaction not found" });
     }
 
-    if (currentTransaction.type !== "redemption") {
-      return res.status(400).json({message: `transaction with id ${currentTransaction.id} is not type of redemption`})
+    if (transaction.type !== "redemption") {
+      return res.status(400).json({ message: `Transaction ${transactionId} is not a redemption` });
     }
 
-    if (currentTransaction.processedBy) {
-      return res.status(400).json({message: `transaction with id ${currentTransaction.id} is already processed`})
+    if (transaction.processedBy) {
+      return res.status(400).json({ message: `Transaction ${transactionId} is already processed` });
     }
-    
-    // Update the transaction with associated id
+
+    // Amount to deduct is negative
+    const pointsToDeduct = transaction.amount;
+
+    if (transaction.user.points + pointsToDeduct < 0) {
+      return res.status(400).json({ message: "Insufficient points" });
+    }
+
+    // Update transaction as processed
     const updatedTransaction = await prisma.transaction.update({
-      where: {id: transactionId},
-      data: {processedBy: { 
-        connect: { 
-          id: currentUser.id 
-        } 
-      }},
-      include: {
-        user: true,           // Include user (customer)
-        createdBy: true,       // Include creator (cashier/manager)
-        processedBy: true     // Also include processedBy
-      }
+      where: { id: transactionId },
+      data: { processedBy: { connect: { id: currentUser.id } } },
+      include: { user: true, createdBy: true, processedBy: true }
     });
 
-    const result = {
+    // Deduct points
+    await prisma.user.update({
+      where: { id: transaction.userId },
+      data: { points: transaction.user.points + pointsToDeduct }
+    });
+
+    // Return result
+    return res.status(200).json({
       id: updatedTransaction.id,
       utorid: updatedTransaction.user.utorid,
       type: updatedTransaction.type,
       processedBy: updatedTransaction.processedBy.utorid,
-      redeemed: updatedTransaction.redeemed,
+      redeemed: pointsToDeduct,
       remark: updatedTransaction.remark,
       createdBy: updatedTransaction.createdBy.utorid
-    }
-
-    // After updating the transaction, deduct points from user
-    const newPoints = updatedTransaction.user.points - updatedTransaction.amount;
-    await prisma.user.update({
-      where: {id: updatedTransaction.userId},
-      data : {points: newPoints}
-    })
-
-
-    return res.status(200).json(result);
+    });
 
   } catch (err) {
-    console.error("Error updating transaction", err);
+    console.error("Error processing redemption:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-// TODO: Implement the rest of transaction
+
 module.exports = router;

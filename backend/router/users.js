@@ -395,72 +395,72 @@ router.patch('/me/password', authenticate, checkClearance('regular'), async (req
 // Create a new redemption transaction
 router.post('/me/transactions', authenticate, checkClearance('regular'), async (req, res) => {
     const currentUser = req.user;
-    const type = req.body.type;
-    const amount = req.body.amount;
-    const remark = req.body.remark || "";
-    
-    // 403 Forbidden if the logged-in user is not verified
+    const { type, amount, remark = "" } = req.body;
+
+    // User must be verified
     if (!currentUser.verified) {
-        return res.status(403).json({ message: "Forbidden" });
+        return res.status(403).json({ message: "Only verified users can redeem points" });
     }
 
-    // Validate type: must be redemption
-    if (type !== undefined) {
-        if (type !== 'redemption') {
-            return res.status(400).json({message: "type must be redemption"})
-        }
-    } else {
-        return res.status(400).json({message: "type is required"})
+    // Validate type: must be "redemption"
+    if (type === undefined) {
+        return res.status(400).json({ message: "type is required" });
+    }
+    if (type !== "redemption") {
+        return res.status(400).json({ message: "type must be redemption" });
     }
 
-    // Validate amount
+    // Validate amount (positive integer)
     const amountNum = Number(amount);
-    if (amount !== undefined) {
-        if (isNaN(amountNum) || !Number.isInteger(amountNum) || amountNum < 0) {
-            return res.status(400).json({message: "amount must be a positive integer number"})
-        }
-    } else {
-        return res.status(400).json({message: "amount is required"})
+    if (amount === undefined) {
+        return res.status(400).json({ message: "Points to redeem is required" });
+    }
+    if (isNaN(amountNum) || !Number.isInteger(amountNum) || amountNum <= 0) {
+        return res.status(400).json({ message: "Points to redeem must be a positive integer" });
     }
 
-    // Create redemption transaction in prisma
+    // User must have enough points
+    if (currentUser.points < amountNum) {
+        return res.status(400).json({ message: "Insufficient points" });
+    }
+
     try {
-        // 400 Bad Request if the requested amount exceeds user's point balance
-        if (currentUser.points < amount) {
-            return res.status(400).json({ message: "Insufficient points" });
-        }
         const newTransaction = await prisma.transaction.create({
             data: {
-                type: type,
-                amount: amount,
-                remark: remark,
-                user: { 
+                type: "redemption",
+                amount: -amountNum,
+                remark,
+                user: {
                     connect: { id: currentUser.id }
                 },
-                createdBy: { 
+                createdBy: {
                     connect: { id: currentUser.id }
-                },
+                }
             },
             include: {
-            user: true,
-            createdBy: true
-        }
-        })
+                user: true,
+                createdBy: true
+            }
+        });
+
         const result = {
             id: newTransaction.id,
             utorid: newTransaction.user.utorid,
             type: newTransaction.type,
-            processedBy: newTransaction.processedBy,
-            amount: newTransaction.amount,
+            amount: Math.abs(newTransaction.amount),
             remark: newTransaction.remark,
-            createdBy: newTransaction.createdBy.utorid
-        }
+            createdBy: newTransaction.createdBy.utorid,
+            createdAt: newTransaction.createdAt
+        };
+
         return res.status(201).json(result);
+
     } catch (err) {
-        console.error('Error creating redemption transaction', err);
-        return res.status(500).json({ message: 'Internal server error' });
+        console.error("Error creating redemption transaction", err);
+        return res.status(500).json({ message: "Internal server error" });
     }
 });
+
 
 // Retrieve a list of transactions owned by the currently logged in user
 router.get("/me/transactions", authenticate, checkClearance('regular'), async (req, res) => {
@@ -559,7 +559,6 @@ router.get("/me/transactions", authenticate, checkClearance('regular'), async (r
     const skip = (pageNum - 1) * limitNum;
     const take = limitNum;
 
-    // Fetch transactions
     try {
         // Prisma transaction to get count and paginated results
         const [count, transactions] = await prisma.$transaction([
@@ -569,24 +568,63 @@ router.get("/me/transactions", authenticate, checkClearance('regular'), async (r
                 skip,
                 take,
                 include: {
-                    user: true,           // Include user (customer)
-                    createdBy: true       // Include creator (cashier/manager)
-                }
+                    user: true,        // Include user (current)
+                    createdBy: true    // Include creator (cashier/manager)
+                },
+                orderBy: {
+                    createdAt: "desc", // or "asc"
+                },
             }),
         ]);
 
-        const results = transactions.map(transaction => ({
-            id: transaction.id,
-            type: transaction.type,
-            ...(transaction.spent && { spent: transaction.spent }),
-            amount: transaction.amount,
-            ...(transaction.relatedId && { relatedId: transaction.relatedId }),
-            promotionIds: transaction.promotionIds,
-            remark: transaction.remark,
-            createdBy: transaction.createdBy.utorid
-        }));
+        // Build user map for transfer sender/recipient lookup
+        const relatedIds = transactions
+            .filter(t => t.relatedId !== null)
+            .map(t => t.relatedId);
 
-        // Respond with count and results
+        const relatedUsers = await prisma.user.findMany({
+            where: { id: { in: relatedIds } }
+        });
+
+        const relatedMap = {};
+        relatedUsers.forEach(u => {
+            relatedMap[u.id] = u.utorid;
+        });
+
+        // Map results
+        const results = transactions.map(transaction => {
+            let sender = null;
+            let recipient = null;
+
+            if (transaction.type === "transfer") {
+                const otherUserUTORid = relatedMap[transaction.relatedId] || null;
+
+                if (transaction.amount < 0) {
+                    // Current user sent points
+                    sender = transaction.user.utorid;
+                    recipient = otherUserUTORid;
+                } else {
+                    // Current user received points
+                    sender = otherUserUTORid;
+                    recipient = transaction.user.utorid;
+                }
+            }
+
+            return {
+                id: transaction.id,
+                type: transaction.type,
+                spent: transaction.spent ?? undefined,
+                amount: transaction.amount,
+                relatedId: transaction.relatedId ?? undefined,
+                promotionIds: transaction.promotionIds,
+                remark: transaction.remark,
+                createdBy: transaction.createdBy.utorid,
+                createdAt: transaction.createdAt,
+                sender,
+                recipient
+            };
+        });
+
         return res.json({ count, results });
 
     } catch (err) {

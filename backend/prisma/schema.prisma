@@ -93,7 +93,7 @@ model Transaction {
   userId        Int
   createdById   Int
   processedById Int?
-  relatedId Int?               
+  relatedId     Int?               
 
   user          User               @relation("UserTransactions", fields: [userId], references: [id])
   createdBy     User               @relation("UserCreatedTransactions", fields: [createdById], references: [id])
