@@ -64,16 +64,40 @@ export function EventProvider({ children }) {
     // Fetch a single event
     const fetchEvent = async (id) => {
         setLoading(true);
+        setError(null);
         try {
             const data = await eventAPI.get(id);
             setEvent(data);
         } catch (err) {
-            setError(err.message || "Failed to create event");
-            throw err;
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
+
+     // Delete an event
+    const deleteEvent = async (id) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+        await eventAPI.delete(id);
+        setEvent(null); // Clear event after deletion
+        return true;
+        } catch (err) {
+        if (err.status === 401) {
+            setError("Unauthorized");
+        } else if (err.status === 404) {
+            setError("Event not found");
+        } else {
+            setError(err.message || "An error occurred while deleting the event");
+        }
+        throw err;
+        } finally {
+        setLoading(false);
+        }
+    };
+
 
 
     return (
@@ -83,6 +107,7 @@ export function EventProvider({ children }) {
             setEvent,
             createEvent,
             fetchEvent,
+            deleteEvent,
             loading,
             error,
         }}

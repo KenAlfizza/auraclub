@@ -41,7 +41,21 @@ export const eventAPI = {
   
   // Get a single event
   get: async (id) => {
-    const res = await fetch(`${API_BASE_URL}/events/${id}`);
-    return res.json();
+    const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
   },
+
+  // Delete an event
+  delete: async (id) => {
+    const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+
+    return handleResponse(response);
+  },
+
+
 }

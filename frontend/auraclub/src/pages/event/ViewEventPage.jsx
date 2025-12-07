@@ -1,12 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/pages/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useEvent } from "@/context/EventContext";
-
-// Icons used in CreateEventPage
 import {
   CalendarPlus,
   Calendar,
@@ -24,7 +22,9 @@ import {
 export function ViewEventPage({ displayType }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { event, fetchEvent, loading, error } = useEvent();
+  const { event, fetchEvent, deleteEvent, loading, error } = useEvent();
+
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
 
   useEffect(() => {
     if (id) fetchEvent(id);
@@ -37,6 +37,16 @@ export function ViewEventPage({ displayType }) {
       </Layout>
     );
   }
+
+  const handleDelete = async () => {
+    try {
+      await deleteEvent(id);
+      setShowDeletePopup(false);
+      navigate("/manage/events"); // Go back to events list
+    } catch (err) {
+      // Error is already set in context, StatusBanner will show it
+    }
+  };
 
   const renderHeader = () => (
     <div className="flex flex-row items-center gap-4">
@@ -61,9 +71,32 @@ export function ViewEventPage({ displayType }) {
     </div>
   );
 
+  const renderDeletePopup = () => {
+    if (!showDeletePopup) return null;
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
+        <div className="bg-white p-6 rounded-lg w-80 shadow-lg">
+          <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
+          <p className="text-gray-700 mb-6">
+            Are you sure you want to delete this event? This action cannot be
+            undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowDeletePopup(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderEventDetails = () => (
     <>
-      {/* Title */}
+      {/* Title + Actions */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
           <h2 className="text-2xl font-semibold flex items-center gap-2">
@@ -74,7 +107,6 @@ export function ViewEventPage({ displayType }) {
           </h3>
         </div>
 
-        {/* Actions for organizers and managers */}
         {(displayType === "organizer" || displayType === "manager") && (
           <div className="flex gap-2">
             <Button onClick={() => navigate(`/manage/events/edit/${id}`)}>
@@ -83,7 +115,7 @@ export function ViewEventPage({ displayType }) {
             {displayType === "manager" && (
               <Button
                 variant="destructive"
-                onClick={() => console.log("delete", id)}
+                onClick={() => setShowDeletePopup(true)}
               >
                 <Trash2 />
               </Button>
@@ -115,7 +147,6 @@ export function ViewEventPage({ displayType }) {
                 : "-"}
             </p>
           </div>
-
           <div className="flex-1 min-w-[200px]">
             <Label className="flex items-center gap-2 text-sm font-semibold">
               <Clock size={14} /> End Time
@@ -133,7 +164,6 @@ export function ViewEventPage({ displayType }) {
             </Label>
             <p className="mt-1 text-gray-700">{event?.capacity ?? "-"}</p>
           </div>
-
           <div className="flex-1 min-w-[200px]">
             <Label className="flex items-center gap-2 text-sm font-semibold">
               <Users size={14} /> Organizers / Guests
@@ -145,7 +175,6 @@ export function ViewEventPage({ displayType }) {
           </div>
         </div>
 
-        {/* Points info only for organizers and managers */}
         {(displayType === "organizer" || displayType === "manager") && (
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
@@ -154,7 +183,6 @@ export function ViewEventPage({ displayType }) {
               </Label>
               <p className="mt-1 text-gray-700">{event?.pointsTotal ?? "-"}</p>
             </div>
-
             <div className="flex-1 min-w-[200px]">
               <Label className="flex items-center gap-2 text-sm font-semibold">
                 <Coins size={14} /> Remaining Points
@@ -172,7 +200,10 @@ export function ViewEventPage({ displayType }) {
       return (
         <div className="flex gap-2 mt-4">
           <Button
-            disabled={event?.capacity <= event?.guestsCount || new Date() > new Date(event?.endTime)}
+            disabled={
+              event?.capacity <= event?.guestsCount ||
+              new Date() > new Date(event?.endTime)
+            }
             onClick={() => console.log("RSVP")}
           >
             RSVP
@@ -218,6 +249,7 @@ export function ViewEventPage({ displayType }) {
             {renderFooterActions()}
           </CardContent>
         </Card>
+        {renderDeletePopup()}
       </div>
     </Layout>
   );

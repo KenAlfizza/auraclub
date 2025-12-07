@@ -276,7 +276,7 @@ function App() {
         element={
           <UserProvider>
             <EventProvider>
-              <ViewEventPage displayType="organizer" />
+              <ViewEventPage displayType="manager" />
             </EventProvider>
           </UserProvider>
         }
