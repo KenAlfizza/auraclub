@@ -16,6 +16,9 @@ export function EventProvider({ children }) {
         published: false,
     });
 
+    const [events, setEvents] = useState([]);
+    const [eventsCount, setEventsCount] = useState(null);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -75,6 +78,71 @@ export function EventProvider({ children }) {
         }
     };
 
+    const fetchEvents = async (query = {}) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+        // Sanitize query: remove null, undefined, empty string, "null", "undefined"
+        const sanitizedQuery = Object.fromEntries(
+            Object.entries(query).filter(([_, value]) =>
+            value !== null &&
+            value !== undefined &&
+            value !== "" &&
+            value !== "null" &&
+            value !== "undefined"
+            )
+        );
+
+        const data = await eventAPI.getAll(sanitizedQuery);
+            setEvents(data.results || []);
+            setEventsCount(data.count || 0);
+            return data;
+        } catch (err) {
+            setError(err.message || "Failed to fetch events");
+        throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Update an event
+    const updateEvent = async (id, updatedData) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const sanitizedData = Object.fromEntries(
+                Object.entries(updatedData).filter(
+                    ([_, value]) =>
+                        value !== null &&
+                        value !== undefined &&
+                        value !== "" &&
+                        value !== "null" &&
+                        value !== "undefined"
+                )
+            );
+
+            const result = await eventAPI.update(id, sanitizedData);
+
+            // Update local state if the updated event matches current event
+            if (event?.id === id) {
+                setEvent(prev => ({ ...prev, ...result }));
+            }
+
+            // Optionally update the events list
+            setEvents(prevEvents => prevEvents.map(e => (e.id === id ? { ...e, ...result } : e)));
+
+            return result;
+        } catch (err) {
+            setError(err.message || "Failed to update event");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
      // Delete an event
     const deleteEvent = async (id) => {
         setLoading(true);
@@ -98,15 +166,17 @@ export function EventProvider({ children }) {
         }
     };
 
-
-
     return (
         <EventContext.Provider
         value={{
             event,
+            events,
+            eventsCount,
             setEvent,
             createEvent,
             fetchEvent,
+            fetchEvents,
+            updateEvent,
             deleteEvent,
             loading,
             error,

@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   Users,
   MapPin,
-  CreditCard,
   Clock,
   Edit,
   Trash2,
@@ -22,7 +21,7 @@ import {
 export function ViewEventPage({ displayType }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { event, fetchEvent, deleteEvent, loading, error } = useEvent();
+  const { event, fetchEvent, deleteEvent, updateEvent, loading, error } = useEvent();
 
   const [showDeletePopup, setShowDeletePopup] = useState(false);
 
@@ -38,7 +37,7 @@ export function ViewEventPage({ displayType }) {
     );
   }
 
-  const handleDelete = async () => {
+  const confirmDelete = async () => {
     try {
       await deleteEvent(id);
       setShowDeletePopup(false);
@@ -46,6 +45,17 @@ export function ViewEventPage({ displayType }) {
     } catch (err) {
       // Error is already set in context, StatusBanner will show it
     }
+  };
+
+  const confirmPublish = async () => {
+    if (!publishAction) return;
+
+    const newStatus = publishAction === "publish";
+
+    await updateEvent(id, { published: newStatus });
+
+    setShowPublishPopup(false);
+    setPublishAction(null);
   };
 
   const renderHeader = () => (
@@ -71,25 +81,58 @@ export function ViewEventPage({ displayType }) {
     </div>
   );
 
+   const renderPublishPopup = () => {
+    if (!showPublishPopup) return null;
+    const isPublish = publishAction === "publish";
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+        <Card className="w-80 p-6 shadow-lg">
+          <CardContent className="flex flex-col gap-4">
+            <h3 className="text-lg font-semibold">
+              Confirm {isPublish ? "Publish" : "Unpublish"}
+            </h3>
+            <p className="text-gray-700">
+              Are you sure you want to {isPublish ? "publish" : "unpublish"} this event?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowPublishPopup(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant={isPublish ? "default" : "destructive"}
+                onClick={confirmPublish}
+              >
+                {isPublish ? "Publish" : "Unpublish"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   const renderDeletePopup = () => {
     if (!showDeletePopup) return null;
+
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-center z-50">
-        <div className="bg-white p-6 rounded-lg w-80 shadow-lg">
-          <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
-          <p className="text-gray-700 mb-6">
-            Are you sure you want to delete this event? This action cannot be
-            undone.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setShowDeletePopup(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </div>
-        </div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+        <Card className="w-80 p-6 shadow-lg">
+          <CardContent className="flex flex-col gap-4">
+            <h3 className="text-lg font-semibold">Confirm Delete</h3>
+            <p className="text-gray-700">
+              Are you sure you want to delete this event? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeletePopup(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete}>
+                Delete
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   };
@@ -109,7 +152,7 @@ export function ViewEventPage({ displayType }) {
 
         {(displayType === "organizer" || displayType === "manager") && (
           <div className="flex gap-2">
-            <Button onClick={() => navigate(`/manage/events/edit/${id}`)}>
+            <Button onClick={() => navigate(`/manage/events/${id}/edit`)}>
               <Edit />
             </Button>
             {displayType === "manager" && (
@@ -230,7 +273,7 @@ export function ViewEventPage({ displayType }) {
     if (displayType === "manager") {
       return (
         <div className="flex justify-end gap-2 mt-4">
-          <Button onClick={() => console.log("toggle publish", id)}>
+          <Button onClick={renderPublishPopup}>
             {event?.published ? "Unpublish" : "Publish"}
           </Button>
         </div>

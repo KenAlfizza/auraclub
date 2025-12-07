@@ -38,6 +38,14 @@ export const eventAPI = {
 
     return handleResponse(response);
   },
+
+  // Get all event
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/events`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
   
   // Get a single event
   get: async (id) => {
@@ -46,6 +54,20 @@ export const eventAPI = {
     });
     return handleResponse(response);
   },
+
+  // Update an event
+  update: async (id, data) => {
+    console.log(`eventAPI.update called for event ${id} with:`, data);
+
+    const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    return handleResponse(response);
+  },
+
 
   // Delete an event
   delete: async (id) => {

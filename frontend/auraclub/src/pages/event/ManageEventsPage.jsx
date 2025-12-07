@@ -24,14 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -40,22 +32,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {
-  Plus,
-  Filter,
-} from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Filter } from "lucide-react";
+import { useEvent } from "@/context/EventContext";
 
 export function ManageEventsPage() {
   const navigate = useNavigate();
-
   const itemsPerPage = 10;
-  const [events, setEvents] = useState([]);
+
+  const {
+    events,
+    eventsCount,
+    fetchEvents,
+    deleteEvent,
+    loading,
+    error,
+  } = useEvent();
+
   const [activePage, setActivePage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // Filter states
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -77,72 +70,35 @@ export function ManageEventsPage() {
     orderBy: "startTime",
   });
 
+  const totalPages = Math.ceil(eventsCount / itemsPerPage);
+
   const hasActiveFilters = Object.entries(appliedFilters).some(
     ([key, value]) => key !== "orderBy" && value !== null
   );
 
-  // Fetch events
+  // Fetch events whenever page or filters change
   useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true);
-      setError(null);
-
+    const loadEvents = async () => {
       try {
-        // Build query params
-        const params = {
+        await fetchEvents({
           page: activePage,
           limit: itemsPerPage,
           orderBy: appliedFilters.orderBy,
-        };
-
-        if (appliedFilters.name) params.name = appliedFilters.name;
-        if (appliedFilters.location) params.location = appliedFilters.location;
-        if (appliedFilters.published !== null) params.published = appliedFilters.published;
-        if (appliedFilters.showFull !== null) params.showFull = appliedFilters.showFull;
-        if (appliedFilters.started !== null) params.started = appliedFilters.started;
-        if (appliedFilters.ended !== null) params.ended = appliedFilters.ended;
-
-        // TODO: Replace with actual API call
-        // const data = await eventAPI.getAll(params);
-        
-        // Mock data for demonstration
-        const mockData = {
-          count: 25,
-          results: Array.from({ length: itemsPerPage }, (_, i) => ({
-            id: (activePage - 1) * itemsPerPage + i + 1,
-            name: `Event ${(activePage - 1) * itemsPerPage + i + 1}`,
-            location: "Location A",
-            startTime: new Date(Date.now() + i * 86400000).toISOString(),
-            endTime: new Date(Date.now() + (i + 1) * 86400000).toISOString(),
-            capacity: 50,
-            pointsRemain: 500,
-            pointsAwarded: 100,
-            published: i % 2 === 0,
-            organizersCount: 2,
-            guestsCount: 30,
-          })),
-        };
-
-        setEvents(mockData.results);
-        setTotalCount(mockData.count);
-        setTotalPages(Math.ceil(mockData.count / itemsPerPage));
+          name: appliedFilters.name,
+          location: appliedFilters.location,
+          published: appliedFilters.published,
+          showFull: appliedFilters.showFull,
+          started: appliedFilters.started,
+          ended: appliedFilters.ended,
+        });
       } catch (err) {
-        console.error("Error fetching events:", err);
-        setError(err.message || "Failed to fetch events");
-        setEvents([]);
-        setTotalCount(0);
-        setTotalPages(1);
-      } finally {
-        setLoading(false);
+        console.error("Failed to fetch events:", err);
       }
     };
-
-    fetchEvents();
+    loadEvents();
   }, [activePage, appliedFilters]);
 
-  // Apply filters
   const handleApplyFilters = () => {
-    // Validate: cannot filter by both started and ended
     if (filterStarted && filterEnded) {
       alert("Cannot filter by both 'started' and 'ended' simultaneously");
       return;
@@ -157,11 +113,11 @@ export function ManageEventsPage() {
       ended: filterEnded === "" ? null : filterEnded === "true",
       orderBy: orderBy || "startTime",
     });
+
     setActivePage(1);
     setIsFilterOpen(false);
   };
 
-  // Clear filters
   const handleClearFilters = () => {
     setFilterName("");
     setFilterLocation("");
@@ -183,35 +139,29 @@ export function ManageEventsPage() {
     setIsFilterOpen(false);
   };
 
-  // Delete event
   const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+
     try {
-      // TODO: Replace with actual API call
-      // await eventAPI.delete(eventId);
-      console.log("Deleting event:", eventId);
-      // Refresh events list
-      // fetchEvents();
+      await deleteEvent(eventId);
+      // Refetch after deletion
+      fetchEvents({
+        page: activePage,
+        limit: itemsPerPage,
+        orderBy: appliedFilters.orderBy,
+        name: appliedFilters.name,
+        location: appliedFilters.location,
+        published: appliedFilters.published,
+        showFull: appliedFilters.showFull,
+        started: appliedFilters.started,
+        ended: appliedFilters.ended,
+      });
     } catch (err) {
-      console.error("Error deleting event:", err);
+      console.error("Failed to delete event:", err);
       alert("Failed to delete event");
     }
   };
 
-  // Toggle publish status
-  const handleTogglePublish = async (eventId, currentStatus) => {
-    try {
-      // TODO: Replace with actual API call
-      // await eventAPI.update(eventId, { published: !currentStatus });
-      console.log("Toggling publish for event:", eventId);
-      // Refresh events list
-      // fetchEvents();
-    } catch (err) {
-      console.error("Error toggling publish status:", err);
-      alert("Failed to update publish status");
-    }
-  };
-
-  // Handle page change
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setActivePage(newPage);
@@ -221,7 +171,7 @@ export function ManageEventsPage() {
 
   return (
     <Layout header sidebar>
-      <div className="flex flex-col w-full gap-4 p-6">
+      <div className="flex flex-col w-full h-full gap-4">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -240,7 +190,9 @@ export function ManageEventsPage() {
                   Filters
                   {hasActiveFilters && (
                     <Badge variant="secondary" className="ml-1">
-                      {Object.values(appliedFilters).filter((v) => v !== null && v !== "startTime").length}
+                      {Object.values(appliedFilters).filter(
+                        (v) => v !== null && v !== "startTime"
+                      ).length}
                     </Badge>
                   )}
                 </Button>
@@ -255,7 +207,6 @@ export function ManageEventsPage() {
                 </DialogHeader>
 
                 <div className="grid gap-4 py-4">
-                  {/* Name Filter */}
                   <div className="grid gap-2">
                     <Label htmlFor="filter-name">Name</Label>
                     <Input
@@ -266,7 +217,6 @@ export function ManageEventsPage() {
                     />
                   </div>
 
-                  {/* Location Filter */}
                   <div className="grid gap-2">
                     <Label htmlFor="filter-location">Location</Label>
                     <Input
@@ -277,7 +227,6 @@ export function ManageEventsPage() {
                     />
                   </div>
 
-                  {/* Published Status */}
                   <div className="grid gap-2">
                     <Label htmlFor="filter-published">Published Status</Label>
                     <Select value={filterPublished} onValueChange={setFilterPublished}>
@@ -291,7 +240,6 @@ export function ManageEventsPage() {
                     </Select>
                   </div>
 
-                  {/* Show Full Events */}
                   <div className="grid gap-2">
                     <Label htmlFor="filter-full">Show Full Events</Label>
                     <Select value={filterShowFull} onValueChange={setFilterShowFull}>
@@ -305,7 +253,6 @@ export function ManageEventsPage() {
                     </Select>
                   </div>
 
-                  {/* Started Filter */}
                   <div className="grid gap-2">
                     <Label htmlFor="filter-started">Started</Label>
                     <Select
@@ -323,7 +270,6 @@ export function ManageEventsPage() {
                     </Select>
                   </div>
 
-                  {/* Ended Filter */}
                   <div className="grid gap-2">
                     <Label htmlFor="filter-ended">Ended</Label>
                     <Select
@@ -341,7 +287,6 @@ export function ManageEventsPage() {
                     </Select>
                   </div>
 
-                  {/* Order By */}
                   <div className="grid gap-2">
                     <Label htmlFor="order-by">Order By</Label>
                     <Select value={orderBy} onValueChange={setOrderBy}>
@@ -369,7 +314,6 @@ export function ManageEventsPage() {
               </DialogContent>
             </Dialog>
 
-            {/* Create Event Button */}
             <Button onClick={() => navigate("/manage/events/create")} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Event
@@ -377,70 +321,38 @@ export function ManageEventsPage() {
           </div>
         </div>
 
-        {/* Active Filters Display */}
+        {/* Active Filters */}
         {hasActiveFilters && (
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-600">Active filters:</span>
-            {appliedFilters.name && (
-              <Badge variant="secondary">Name: {appliedFilters.name}</Badge>
-            )}
-            {appliedFilters.location && (
-              <Badge variant="secondary">Location: {appliedFilters.location}</Badge>
-            )}
-            {appliedFilters.published !== null && (
-              <Badge variant="secondary">
-                {appliedFilters.published ? "Published" : "Unpublished"}
-              </Badge>
-            )}
-            {appliedFilters.showFull !== null && (
-              <Badge variant="secondary">
-                {appliedFilters.showFull ? "Full events" : "Available events"}
-              </Badge>
-            )}
-            {appliedFilters.started !== null && (
-              <Badge variant="secondary">
-                {appliedFilters.started ? "Started" : "Not started"}
-              </Badge>
-            )}
-            {appliedFilters.ended !== null && (
-              <Badge variant="secondary">
-                {appliedFilters.ended ? "Ended" : "Not ended"}
-              </Badge>
-            )}
+            {appliedFilters.name && <Badge variant="secondary">Name: {appliedFilters.name}</Badge>}
+            {appliedFilters.location && <Badge variant="secondary">Location: {appliedFilters.location}</Badge>}
+            {appliedFilters.published !== null && <Badge variant="secondary">{appliedFilters.published ? "Published" : "Unpublished"}</Badge>}
+            {appliedFilters.showFull !== null && <Badge variant="secondary">{appliedFilters.showFull ? "Full events" : "Available events"}</Badge>}
+            {appliedFilters.started !== null && <Badge variant="secondary">{appliedFilters.started ? "Started" : "Not started"}</Badge>}
+            {appliedFilters.ended !== null && <Badge variant="secondary">{appliedFilters.ended ? "Ended" : "Not ended"}</Badge>}
           </div>
         )}
 
-        {/* Results Count */}
+        {/* Results count */}
         {!loading && (
           <div className="text-sm text-gray-600">
             Showing {events.length > 0 ? (activePage - 1) * itemsPerPage + 1 : 0} -{" "}
-            {Math.min(activePage * itemsPerPage, totalCount)} of {totalCount} events
+            {Math.min(activePage * itemsPerPage, eventsCount)} of {eventsCount} events
           </div>
         )}
 
-        {/* Events List */}
+        {/* Events list */}
         <div className="grid gap-4">
           {loading ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p>Loading events...</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-8 text-center">Loading events...</CardContent></Card>
           ) : error ? (
-            <Card>
-              <CardContent className="p-8 text-center text-red-500">
-                <p>{error}</p>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-8 text-center text-red-500">{error}</CardContent></Card>
           ) : events.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-gray-500">No events found</p>
-                <Button
-                  onClick={() => navigate("/manage/events/create")}
-                  className="mt-4"
-                  variant="outline"
-                >
+                <Button onClick={() => navigate("/manage/events/create")} className="mt-4" variant="outline">
                   Create your first event
                 </Button>
               </CardContent>
@@ -451,7 +363,6 @@ export function ManageEventsPage() {
                 key={event.id}
                 {...event}
                 onDelete={handleDeleteEvent}
-                onTogglePublish={handleTogglePublish}
               />
             ))
           )}
@@ -464,87 +375,31 @@ export function ManageEventsPage() {
               <PaginationItem>
                 <PaginationPrevious
                   href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handlePageChange(activePage - 1);
-                  }}
+                  onClick={(e) => { e.preventDefault(); handlePageChange(activePage - 1); }}
                   className={activePage === 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
 
-              {activePage > 2 && (
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(1);
-                    }}
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              {activePage > 3 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
               {Array.from({ length: totalPages })
-                .map((_, index) => index + 1)
-                .filter(
-                  (page) =>
-                    page === activePage ||
-                    page === activePage - 1 ||
-                    page === activePage + 1
-                )
-                .map((page) => (
+                .map((_, i) => i + 1)
+                .filter(page => page === activePage || page === activePage - 1 || page === activePage + 1)
+                .map(page => (
                   <PaginationItem key={page}>
                     <PaginationLink
                       href="#"
                       isActive={activePage === page}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handlePageChange(page);
-                      }}
+                      onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
                     >
                       {page}
                     </PaginationLink>
                   </PaginationItem>
                 ))}
 
-              {activePage < totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              {activePage < totalPages - 1 && (
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(totalPages);
-                    }}
-                  >
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
               <PaginationItem>
                 <PaginationNext
                   href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handlePageChange(activePage + 1);
-                  }}
-                  className={
-                    activePage === totalPages ? "pointer-events-none opacity-50" : ""
-                  }
+                  onClick={(e) => { e.preventDefault(); handlePageChange(activePage + 1); }}
+                  className={activePage === totalPages ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
