@@ -49,8 +49,11 @@ model User {
   transactionsCreator         Transaction[] @relation("UserCreatedTransactions")    // Transactions created by this user (e.g., cashier/regular user)
   transactionsProcessor       Transaction[] @relation("UserProcessedTransactions")  // Transactions processed by this user (e.g., cashier processing redemption)
 
-  // Tracks which one-time promotions the user has used. This is necessary for dynamic filtering of "available" promotions
+  
   promotionsUsed Promotion[]  @relation("UserPromotionsUsed")
+
+  organizedEvents EventOrganizer[]
+  attendingEvents EventGuest[]
 
   createdAt   DateTime       @default(now())
   lastLogin   DateTime?
@@ -117,4 +120,42 @@ model Promotion {
   transactions  Transaction[] 
 
   createdAt     DateTime    @default(now())
+}
+
+model Event {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?   
+  location    String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int?      
+  pointsTotal Int       
+  pointsRemain Int      
+  published   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  organizers   EventOrganizer[]
+  guests       EventGuest[]
+}
+
+model EventOrganizer {
+  id      Int    @id @default(autoincrement())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId Int
+  userId  Int
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+}
+
+
+model EventGuest {
+  id      Int    @id @default(autoincrement())
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId Int
+  userId  Int
+  user    User   @relation(fields: [userId], references: [id])
+  rsvp    Boolean @default(true)
 }

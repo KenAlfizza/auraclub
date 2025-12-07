@@ -46,10 +46,14 @@ app.use('/users', usersRouter);
 const promotionsRouter = require('./router/promotions');
 app.use('/promotions', promotionsRouter);
 
-
 // Routes: Transactions
 const transactionsRouter = require('./router/transactions');
 app.use('/transactions', transactionsRouter);
+
+// Routes: Events
+const eventsRouter = require('./router/events');
+app.use('/events', eventsRouter);
+
 
 const server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);

@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 function checkClearance(minRole) { 
-    const roles = {'regular': 0, 'cashier': 1, 'manager': 2, 'superuser':3};
+    const roles = {'regular': 0, 'cashier': 1, 'organizer': 2, 'manager': 3, 'superuser':4};
     return (req, res, next) => {
         const userRole = req.user.role;
         if (!userRole) {
