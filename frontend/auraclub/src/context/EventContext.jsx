@@ -166,18 +166,79 @@ export function EventProvider({ children }) {
         }
     };
 
+    /** ----------------- Organizer methods ----------------- **/
+
+    const fetchOrganizers = async (eventId) => {
+        setLoading(true);
+        setError("");
+        try {
+            const res = await eventAPI.getOrganizers(eventId);
+            const organizersArray = res.organizers || []; // <-- extract array
+            setEvent((prev) => ({ ...prev, organizers: organizersArray })); 
+            return organizersArray;
+        } catch (err) {
+            setError(err.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };  
+
+
+    const addOrganizer = async (eventId, UTORid) => {
+        setLoading(true);
+        setError("");
+        try {
+        const newOrganizer = await eventAPI.addOrganizer(eventId, UTORid);
+        // Update current event's organizers list
+        setEvent((prev) => ({
+            ...prev,
+            organizers: prev?.organizers ? [...prev.organizers, newOrganizer] : [newOrganizer],
+        }));
+        return newOrganizer;
+        } catch (err) {
+        setError(err.message);
+        throw err;
+        } finally {
+        setLoading(false);
+        }
+    };
+
+    const removeOrganizer = async (eventId, userId) => {
+        setLoading(true);
+        setError("");
+        try {
+        await eventAPI.removeOrganizer(eventId, userId);
+        setEvent((prev) => ({
+            ...prev,
+            organizers: prev?.organizers?.filter((o) => o.id !== userId) || [],
+        }));
+        } catch (err) {
+        setError(err.message);
+        throw err;
+        } finally {
+        setLoading(false);
+        }
+    };
+
     return (
         <EventContext.Provider
         value={{
             event,
-            events,
-            eventsCount,
             setEvent,
             createEvent,
             fetchEvent,
-            fetchEvents,
             updateEvent,
             deleteEvent,
+
+            events,
+            eventsCount,
+            fetchEvents,
+            
+            fetchOrganizers,
+            addOrganizer,
+            removeOrganizer,
+
             loading,
             error,
         }}

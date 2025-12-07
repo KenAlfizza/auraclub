@@ -28,25 +28,22 @@ function getAuthHeaders() {
 export const eventAPI = {
   // Create a new event
   create: async (data) => {
-    console.log("eventAPI.create called with:", data);
-
     const response = await fetch(`${API_BASE_URL}/events`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-
     return handleResponse(response);
   },
 
-  // Get all event
+  // Get all events
   getAll: async () => {
     const response = await fetch(`${API_BASE_URL}/events`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(response);
   },
-  
+
   // Get a single event
   get: async (id) => {
     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
@@ -57,17 +54,13 @@ export const eventAPI = {
 
   // Update an event
   update: async (id, data) => {
-    console.log(`eventAPI.update called for event ${id} with:`, data);
-
     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
-
     return handleResponse(response);
   },
-
 
   // Delete an event
   delete: async (id) => {
@@ -75,9 +68,38 @@ export const eventAPI = {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
-
     return handleResponse(response);
   },
 
+  /** ------------------- Organizers ------------------- **/
 
-}
+  // Get all organizers for an event
+  getOrganizers: async (eventId) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/organizers`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Add an organizer to an event
+  addOrganizer: async (eventId, utorid) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/organizers`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ utorid }),
+    });
+    return handleResponse(response);
+  },
+
+  // Remove an organizer from an event
+  removeOrganizer: async (eventId, userId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/events/${eventId}/organizers/${userId}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
+};

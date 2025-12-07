@@ -43,6 +43,7 @@ import { CreateEventPage } from './pages/event/CreateEventPage'
 import { ViewEventPage } from './pages/event/ViewEventPage'
 import { EventProvider } from './context/EventContext'
 import EditEventPage from './pages/event/EditEventPage'
+import ManageOrganizersPage from './pages/event/ManageOrganizersPage'
 
 
 function App() {
@@ -292,6 +293,17 @@ function App() {
           <UserProvider>
             <EventProvider>
               <EditEventPage displayType="manager" />
+            </EventProvider>
+          </UserProvider>
+        }
+      />
+
+      <Route
+        path="/manage/events/:id/organizers"
+        element={
+          <UserProvider>
+            <EventProvider>
+              <ManageOrganizersPage displayType="manager" />
             </EventProvider>
           </UserProvider>
         }

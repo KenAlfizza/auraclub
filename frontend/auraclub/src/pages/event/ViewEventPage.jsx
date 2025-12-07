@@ -212,8 +212,8 @@ export function ViewEventPage({ displayType }) {
               <Users size={14} /> Organizers / Guests
             </Label>
             <p className="mt-1 text-gray-700">
-              {(event?.organizersCount ?? 0)} organizers ·{" "}
-              {(event?.guestsCount ?? 0)} guests
+              {(event?.organizers?.length ?? 0)} organizers ·{" "}
+              {(event?.guests?.length ?? 0)} guests
             </p>
           </div>
         </div>
