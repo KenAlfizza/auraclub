@@ -54,6 +54,7 @@ model User {
 
   organizedEvents EventOrganizer[]
   attendingEvents EventGuest[]
+  rspvEvents      EventRSVP[]
 
   createdAt   DateTime       @default(now())
   lastLogin   DateTime?
@@ -138,6 +139,7 @@ model Event {
 
   organizers   EventOrganizer[]
   guests       EventGuest[]
+  rsvps        EventRSVP[]
 }
 
 model EventOrganizer {
@@ -157,5 +159,24 @@ model EventGuest {
   eventId Int
   userId  Int
   user    User   @relation(fields: [userId], references: [id])
-  rsvp    Boolean @default(true)
+
+  @@unique([eventId, userId])
 }
+
+model EventRSVP {
+  id        Int    @id @default(autoincrement())
+  event     Event  @relation(fields: [eventId], references: [id])
+  eventId   Int
+  user      User   @relation(fields: [userId], references: [id])
+  userId    Int
+  status    Boolean @default(true)  // true = RSVP'd
+  attended  Boolean @default(false)
+
+  @@unique([eventId, userId])
+}
+
+
+
+
+
+
