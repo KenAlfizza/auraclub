@@ -16,6 +16,9 @@ const checkClearance = require('../middleware/checkClearance');
 // Middleware: Upload Avatar
 const uploadAvatar = require('../middleware/uploadAvatar');
 
+// Save points snapshot
+const savePointsSnapshot = require('../utils/savePointsSnapshot');
+
 // Register user
 router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
     const utorid = req.body.utorid;
@@ -685,40 +688,58 @@ router.post('/:userId/transactions', authenticate, checkClearance('regular'), as
             return res.status(400).json({ message: "Insufficient points" });
         }
 
-        const senderTransaction = await prisma.transaction.create({
-            data: {
-                type: 'transfer',
-                amount: -amountNum,
-                remark: remark,
-                user: { connect: { id: senderId } },
-                createdBy: { connect: { id: senderId } },
-                relatedId: recipientId
-            },
-            include: { user: true, createdBy: true }
-            });
-
-        // Recipient transaction
-        const recipientTransaction = await prisma.transaction.create({
-            data: {
-                type: 'transfer',
-                amount: amountNum,
-                remark: remark,
-                user: { connect: { id: recipientId } },
-                createdBy: { connect: { id: senderId } },
-                relatedId: senderId
-            },
-            include: { user: true }
+        // Deduct points from sender first
+        const senderUpdated = await prisma.user.update({
+        where: { id: senderId },
+        data: { points: { decrement: amountNum } },
         });
+
+        // Add points to recipient
+        const recipientUpdated = await prisma.user.update({
+        where: { id: recipientId },
+        data: { points: { increment: amountNum } },
+        });
+
+        // Create transactions AFTER updating points
+        const senderTransaction = await prisma.transaction.create({
+        data: {
+            type: 'transfer',
+            amount: -amountNum,
+            remark,
+            user: { connect: { id: senderId } },
+            createdBy: { connect: { id: senderId } },
+            relatedId: recipientId
+        },
+        include: { user: true }
+        });
+
+        const recipientTransaction = await prisma.transaction.create({
+        data: {
+            type: 'transfer',
+            amount: amountNum,
+            remark,
+            user: { connect: { id: recipientId } },
+            createdBy: { connect: { id: senderId } },
+            relatedId: senderId
+        },
+        include: { user: true }
+        });
+
+        // Save points snapshots using the updated points
+        await savePointsSnapshot(senderUpdated.id, senderUpdated.points);
+        await savePointsSnapshot(recipientUpdated.id, recipientUpdated.points);
+
 
         const result = {
             id: senderTransaction.id,
             sender: senderTransaction.user.utorid,
-            recipient: recipient.utorid,
+            recipient: recipientTransaction.user.utorid,
             type: senderTransaction.type,
             sent: Math.abs(senderTransaction.amount),
             remark: senderTransaction.remark,
             createdAt: senderTransaction.createdAt,
         };
+
 
         return res.status(201).json(result);
 
@@ -984,5 +1005,42 @@ router.patch('/:userId', authenticate, checkClearance('manager'), async (req, re
         return res.status(500).json({message:'Internal server error'})
     }
 });
+
+// Delete a specific user
+router.delete('/:userId', authenticate, checkClearance('manager'), async (req, res) => {
+    const userId = parseInt(req.params.userId);
+
+    if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    try {
+        // Check if user exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Optional: prevent deletion of higher clearance users
+        if (['manager', 'superuser'].includes(user.role)) {
+            return res.status(403).json({ message: "Cannot delete users with manager or superuser role" });
+        }
+
+        // Delete the user
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+
+        return res.status(200).json({ message: "User deleted successfully" });
+
+    } catch (err) {
+        console.error("Error deleting user", err);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 
 module.exports = router;

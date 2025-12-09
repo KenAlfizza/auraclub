@@ -1,3 +1,4 @@
+// Datasource and generator
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -7,6 +8,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Enums must be declared first
 enum RoleType {
   regular
   cashier
@@ -27,6 +29,8 @@ enum PromotionType {
   onetime
 }
 
+// Models
+
 model User {
   id          Int            @id @default(autoincrement())
   name        String 
@@ -36,91 +40,48 @@ model User {
   birthday    DateTime?
   verified    Boolean        @default(false)
   avatarUrl   String?                  
-  
   role        RoleType       @default(regular)
   suspicious  Boolean        @default(false)
-
   points      Int            @default(0)
 
   loginToken  LoginToken?
-  resetToken  ResetToken?
+  resetToken  ResetToken?     
 
-  transactionsUser            Transaction[] @relation("UserTransactions")           // Transactions associated with the user (recipient/subject)
-  transactionsCreator         Transaction[] @relation("UserCreatedTransactions")    // Transactions created by this user (e.g., cashier/regular user)
-  transactionsProcessor       Transaction[] @relation("UserProcessedTransactions")  // Transactions processed by this user (e.g., cashier processing redemption)
+  transactionsUser      Transaction[] @relation("UserTransactions")
+  transactionsCreator   Transaction[] @relation("UserCreatedTransactions")
+  transactionsProcessor Transaction[] @relation("UserProcessedTransactions")
 
-  
-  promotionsUsed Promotion[]  @relation("UserPromotionsUsed")
+  promotionsUsed Promotion[] @relation("UserPromotionsUsed")
 
   organizedEvents EventOrganizer[]
   attendingEvents EventGuest[]
   rspvEvents      EventRSVP[]
 
-  createdAt   DateTime       @default(now())
-  lastLogin   DateTime?
+  pointsSnapshots UserPoints[]
 
+  createdAt   DateTime @default(now())
+  lastLogin   DateTime?
 }
 
 model LoginToken {
-  id        Int         @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   token     String
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
   expiresAt DateTime
 
-  userId    Int         @unique
-  user      User        @relation(fields: [userId], references:[id])
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references:[id], onDelete: Cascade)
 }
 
 model ResetToken {
-  id        Int         @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   token     String
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
   expiresAt DateTime
-  used      Boolean     @default(false)
+  used      Boolean  @default(false)
 
-  userId    Int         @unique
-  user      User        @relation(fields: [userId], references:[id])
-}
-
-model Transaction {
-  id            Int               @id @default(autoincrement())
-  type          TransactionType
-  amount        Int?
-  spent         Float? 
-  redeemed      Int?
-
-  promotions    Promotion[]  
-
-  suspicious    Boolean           @default(false)
-  remark        String?
-
-  userId        Int
-  createdById   Int
-  processedById Int?
-  relatedId     Int?               
-
-  user          User               @relation("UserTransactions", fields: [userId], references: [id])
-  createdBy     User               @relation("UserCreatedTransactions", fields: [createdById], references: [id])
-  processedBy   User?              @relation("UserProcessedTransactions", fields: [processedById], references: [id])
-
-  createdAt     DateTime           @default(now())
-}
-
-model Promotion {
-  id            Int           @id @default(autoincrement())
-  name          String
-  description   String
-  type          PromotionType
-  startTime     DateTime
-  endTime       DateTime
-  minSpending   Float?
-  rate          Float?
-  points        Int?
-
-  usedBy        User[]  @relation("UserPromotionsUsed")
-  transactions  Transaction[] 
-
-  createdAt     DateTime    @default(now())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references:[id], onDelete: Cascade)
 }
 
 model Event {
@@ -142,41 +103,86 @@ model Event {
   rsvps        EventRSVP[]
 }
 
+model Transaction {
+  id            Int               @id @default(autoincrement())
+  type          TransactionType
+  amount        Int?
+  spent         Float? 
+  redeemed      Int?
+  promotions    Promotion[]  
+  suspicious    Boolean           @default(false)
+  remark        String?
+
+  userId        Int
+  createdById   Int
+  processedById Int?
+  relatedId     Int?               
+
+  user          User  @relation("UserTransactions", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy     User  @relation("UserCreatedTransactions", fields: [createdById], references: [id], onDelete: Cascade)
+  processedBy   User? @relation("UserProcessedTransactions", fields: [processedById], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+}
+
+model Promotion {
+  id            Int       @id @default(autoincrement())
+  name          String
+  description   String
+  type          PromotionType
+  startTime     DateTime
+  endTime       DateTime
+  minSpending   Float?
+  rate          Float?
+  points        Int?
+
+  usedBy        User[]       @relation("UserPromotionsUsed")
+  transactions  Transaction[] 
+
+  createdAt     DateTime     @default(now())
+}
+
+// Event Organizer, Guest, RSVP after Event model
 model EventOrganizer {
-  id      Int    @id @default(autoincrement())
-  event   Event  @relation(fields: [eventId], references: [id])
+  id      Int   @id @default(autoincrement())
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId Int
   userId  Int
-  user    User   @relation(fields: [userId], references: [id])
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
 }
 
-
 model EventGuest {
-  id      Int    @id @default(autoincrement())
-  event   Event  @relation(fields: [eventId], references: [id])
+  id      Int   @id @default(autoincrement())
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId Int
   userId  Int
-  user    User   @relation(fields: [userId], references: [id])
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointsAwarded Int   @default(0)  // <-- new field to track awarded points
 
   @@unique([eventId, userId])
 }
 
 model EventRSVP {
-  id        Int    @id @default(autoincrement())
-  event     Event  @relation(fields: [eventId], references: [id])
+  id        Int   @id @default(autoincrement())
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId   Int
-  user      User   @relation(fields: [userId], references: [id])
+  user      User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
-  status    Boolean @default(true)  // true = RSVP'd
+  status    Boolean @default(true)
   attended  Boolean @default(false)
 
   @@unique([eventId, userId])
 }
 
+model UserPoints {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  points    Int
+  date      DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-
-
-
-
+  @@index([userId])
+}

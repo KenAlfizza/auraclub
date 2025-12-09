@@ -54,6 +54,10 @@ app.use('/transactions', transactionsRouter);
 const eventsRouter = require('./router/events');
 app.use('/events', eventsRouter);
 
+// Routes: Points
+const pointsRouter = require('./router/points');
+app.use('/points', pointsRouter);
+
 
 const server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);

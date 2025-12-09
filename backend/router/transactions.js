@@ -11,6 +11,9 @@ const authenticate = require('../middleware/authenticate');
 // Middleware: Clearance Check
 const checkClearance = require('../middleware/checkClearance');
 
+// Utils: Save points snaption for every transaction
+const savePointsSnapshot = require('../utils/savePointsSnapshot');
+
 // Create a new purchase or adjustment transaction between the current logged-in user
 router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
   const currentUser = req.user;
@@ -141,6 +144,8 @@ router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
           )
         );
       }
+      
+      await savePointsSnapshot(customer.id, user.points);
 
       return res.status(201).json({
         id: transaction.id,
@@ -195,6 +200,8 @@ router.post("/", authenticate, checkClearance('cashier'), async (req, res) => {
         where: { id: customer.id },
         data: { points: newBalance }
       });
+
+      await savePointsSnapshot(customer.id, user.points);
 
       return res.status(201).json({
         id: transaction.id,
@@ -423,6 +430,129 @@ router.get("/", authenticate, checkClearance('manager'), async (req, res) => {
 
 });
 
+// Fetch pending redemptions
+router.get('/redemptions/pending', authenticate, checkClearance('cashier'), async (req, res) => {
+  try {
+    const pendingRedemptions = await prisma.transaction.findMany({
+      where: {
+        type: 'redemption',
+        processedBy: null, 
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        user: true,
+      },
+    });
+    res.json(pendingRedemptions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+// Get transactions created OR processed BY the logged-in cashier
+router.get("/cashier", authenticate, checkClearance("cashier"), async (req, res) => {
+  const cashierId = req.user.id;
+  const { page, limit } = req.query;
+
+  // Pagination defaults
+  const pageNum = page ? Number(page) : 1;
+  const limitNum = limit ? Number(limit) : 10;
+  if (isNaN(pageNum) || pageNum < 1) return res.status(400).json({ error: "page must be >= 1" });
+  if (isNaN(limitNum) || limitNum < 1) return res.status(400).json({ error: "limit must be >= 1" });
+  const skip = (pageNum - 1) * limitNum;
+
+  // Filter only purchase and redemption with correct ownership
+  const filterBy = {
+    OR: [
+      { type: "purchase", createdById: cashierId },
+      { type: "redemption", processedById: cashierId }
+    ]
+  };
+
+  try {
+    const [count, transactions] = await prisma.$transaction([
+      prisma.transaction.count({ where: filterBy }),
+      prisma.transaction.findMany({
+        where: filterBy,
+        skip,
+        take: limitNum,
+        include: {
+          user: true,
+          createdBy: true,
+          processedBy: true
+        },
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
+
+    const results = transactions.map((tx) => ({
+      id: tx.id,
+      utorid: tx.user.utorid,
+      amount: tx.amount,
+      spent: tx.spent,
+      type: tx.type,
+      remark: tx.remark,
+      promotionIds: tx.promotionIds,
+      createdBy: tx.createdBy?.utorid,
+      processedBy: tx.processedBy?.utorid,
+      createdAt : tx.createdAt,
+    }));
+
+    return res.json({ count, results });
+  } catch (err) {
+    console.error("Error fetching cashier transactions", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/cashier/stats", authenticate, checkClearance("cashier"), async (req, res) => {
+  try {
+    const cashierId = req.user.id;
+
+    // Total customers where this cashier is responsible
+    const totalCustomers = await prisma.user.count({
+      where: {
+        OR: [
+          { transactionsCreator: { some: { createdById: cashierId } } },
+          { transactionsProcessor: { some: { processedById: cashierId } } }
+        ]
+      }
+    });
+
+    // Total purchases created by this cashier
+    const totalPurchasesAgg = await prisma.transaction.aggregate({
+      _count: { id: true },
+      _sum: { amount: true },
+      where: { type: "purchase", createdById: cashierId }
+    });
+
+    // Total points redeemed processed by this cashier
+    const totalPointsRedeemedAgg = await prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: { type: "redemption", processedById: cashierId }
+    });
+
+    const averagePurchaseAmount = totalPurchasesAgg._count.id
+      ? Math.round((totalPurchasesAgg._sum.amount / totalPurchasesAgg._count.id) * 100) / 100
+      : 0;
+
+    return res.json({
+      totalCustomers,
+      totalPurchases: totalPurchasesAgg._count.id || 0,
+      totalPointsRedeemed: -totalPointsRedeemedAgg._sum.amount || 0,
+      averagePurchaseAmount
+    });
+
+  } catch (err) {
+    console.error("Error fetching dashboard stats", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Get transaction by id
 router.get("/:transactionId", authenticate, checkClearance('manager'), async (req, res) => {
   const transactionId = parseInt(req.params.transactionId);
@@ -600,6 +730,8 @@ router.patch("/:transactionId/processed", authenticate, checkClearance('cashier'
       data: { points: transaction.user.points + pointsToDeduct }
     });
 
+    await savePointsSnapshot(userId, user.points);
+
     // Return result
     return res.status(200).json({
       id: updatedTransaction.id,
@@ -616,6 +748,5 @@ router.patch("/:transactionId/processed", authenticate, checkClearance('cashier'
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 module.exports = router;

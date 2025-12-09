@@ -455,6 +455,90 @@ router.delete("/:eventId/guests/:guestId", authenticate, checkClearance("organiz
   }
 });
 
+// Awards point to the user
+router.post("/:eventId/transactions", authenticate, checkClearance("organizer"), async (req, res) => {
+  const eventId = Number(req.params.eventId);
+  const { amount, userId } = req.body; // userId already resolved on frontend
+   const organizerId = req.user.id;
+
+  // Validate eventId
+  if (!Number.isInteger(eventId) || eventId <= 0) {
+    return res.status(400).json({ message: "Invalid eventId" });
+  }
+
+  // Validate points
+  const points = Number(amount);
+  if (!points || points <= 0 || !Number.isInteger(points)) {
+    return res.status(400).json({ message: "Invalid points amount" });
+  }
+
+  try {
+    // Fetch event with guests
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { guests: true }, // assumes guests have userId and attended
+    });
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    // Determine recipients
+    let recipients = [];
+    if (userId) {
+      const guest = event.guests.find(g => g.userId === userId);
+      if (!guest) {
+        return res.status(400).json({ message: "User is not on the confirmed guest list BBBB" });
+      }
+      recipients.push(guest);
+    } else {
+      recipients = event.guests.filter(g => g.attended);
+      if (recipients.length === 0) {
+        return res.status(400).json({ message: "No confirmed guests to award points to" });
+      }
+    }
+
+    // Check points remaining
+    const totalPoints = points * recipients.length;
+    if (totalPoints > event.pointsRemain) {
+      return res.status(400).json({ message: "Not enough points remaining" });
+    }
+
+    // Deduct points from event
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { pointsRemain: event.pointsRemain - totalPoints },
+    });
+
+    // Record transactions for each recipient
+    const transactions = recipients.map(g =>
+      prisma.transaction.create({
+        data: {
+          amount: points,
+          type: "purchase", // or "award"
+          event: { connect: { id: eventId } },
+          user: { connect: { id: g.userId } }, // associate with existing user
+          createdBy: { connect: { id: organizerId } },
+        },
+      })
+    );
+    await prisma.$transaction(transactions);
+
+    // Return updated event with guests
+    const updatedEvent = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { guests: true },
+    });
+
+    return res.json({
+      message: `Awarded ${points} points to ${recipients.length} guest(s).`,
+      awardedTo: recipients.map(r => r.userId),
+      event: updatedEvent,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to award points" });
+  }
+});
+
+
 
 // GET /events/:eventId/rsvps - Get all RSVPs for an event
 router.get("/:eventId/rsvps", authenticate, async (req, res) => {
