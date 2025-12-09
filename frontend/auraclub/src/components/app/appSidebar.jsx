@@ -40,7 +40,7 @@ const navigate_items = [
     },
     {
       title: "Events",
-      url: "#",
+      url: "/events",
       icon: Calendar,
     },
 ]

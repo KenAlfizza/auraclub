@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/pages/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Trash2, ChevronLeft } from "lucide-react";
 import {
   AlertDialog,
@@ -18,64 +18,64 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useEvent } from "@/context/EventContext";
 
-export function ManageOrganizersPage({ displayType }) {
+export function ManageGuestsPage() {
   const { id } = useParams(); // Event ID
   const navigate = useNavigate();
   const {
-    event,
-    fetchOrganizers,
-    addOrganizer,
-    removeOrganizer,
+    guests,
+    fetchGuests,
+    addGuest,
+    removeGuest,
     loading,
     error,
   } = useEvent();
-  
-  const [newOrganizerUTORid, setNewOrganizerUTORid] = useState("");
+
   const [message, setMessage] = useState("");
+  const [newGuestUTORid, setNewGuestUTORid] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [organizerToDelete, setOrganizerToDelete] = useState(null);
+  const [guestToDelete, setGuestToDelete] = useState(null);
 
   useEffect(() => {
-    if (id) fetchOrganizers(id).catch(err => setMessage(err.message));
+  if (id) {
+    fetchGuests(id).catch(err => setMessage(err.message));
+  }
   }, [id]);
 
-  const handleAddOrganizer = async () => {
-    if (!newOrganizerUTORid.trim()) {
+  const handleAddGuest = async () => {
+    if (!newGuestUTORid.trim()) {
       setMessage("Please enter a UTORid");
       return;
     }
 
     try {
-      await addOrganizer(id, newOrganizerUTORid.trim());
-      setMessage("Organizer added successfully!");
-      setNewOrganizerUTORid("");
-      await fetchOrganizers(id); // Refresh list
+      await addGuest(id, newGuestUTORid.trim());
+      setMessage("Guest added successfully!");
+      setNewGuestUTORid("");
+      await fetchGuests(id);
     } catch (err) {
-      setMessage(err.message || "Failed to add organizer");
+      setMessage(err.message || "Failed to add guest");
     }
   };
 
-  const handleRemoveOrganizer = async (userId) => {
-    setOrganizerToDelete(userId);
+  const handleRemoveGuest = (guestId) => {
+    setGuestToDelete(guestId);
     setDeleteDialogOpen(true);
   };
 
-  const confirmRemoveOrganizer = async () => {
-    if (!organizerToDelete) return;
+  const confirmRemoveGuest = async () => {
+    if (!guestToDelete) return;
 
     try {
-      await removeOrganizer(id, organizerToDelete);
-      setMessage("Organizer removed successfully!");
-      await fetchOrganizers(id); // Refresh list
+      await removeGuest(id, guestToDelete);
+      setMessage("Guest removed successfully!");
+      await fetchGuests(id)
     } catch (err) {
-      setMessage(err.message || "Failed to remove organizer");
+      setMessage(err.message || "Failed to remove guest");
     } finally {
       setDeleteDialogOpen(false);
-      setOrganizerToDelete(null);
+      setGuestToDelete(null);
     }
   };
-
-  const organizers = event?.organizers || [];
 
   return (
     <Layout header sidebar>
@@ -87,17 +87,16 @@ export function ManageOrganizersPage({ displayType }) {
             onClick={() => navigate(-1)}
           />
           <div>
-            <Label className="text-3xl font-bold">Manage Organizers</Label>
+            <Label className="text-3xl font-bold">Manage Guests / RSVPs</Label>
             <p className="text-gray-600 mt-1">
-              Add or remove organizers for this event
+              Add, remove, and update guests for this event
             </p>
           </div>
-        </div>        
-        {/* Add Organizer Card */}
-        <div className="flex flex-col gap-2 w-full">
+        </div>
+
+        {/* Add Guest Card */}
         <Card className="w-full">
           <CardContent className="flex flex-col gap-2 p-4">
-            {/* Status Banner */}
             {(message || error) && (
               <div
                 className={`w-full p-3 rounded-md ${
@@ -111,60 +110,62 @@ export function ManageOrganizersPage({ displayType }) {
             )}
             <div className="flex gap-2">
               <Input
-                placeholder="Enter UTORid"
-                value={newOrganizerUTORid}
-                onChange={(e) => setNewOrganizerUTORid(e.target.value)}
+                placeholder="Enter guest UTORid"
+                value={newGuestUTORid}
+                onChange={(e) => setNewGuestUTORid(e.target.value)}
               />
-              <Button onClick={handleAddOrganizer} disabled={loading}>
-                Add Organizer
+              <Button onClick={handleAddGuest} disabled={loading}>
+                Add Guest
               </Button>
             </div>
           </CardContent>
         </Card>
-        {/* Organizers List */}
+
+        {/* Guests List */}
         <div className="flex flex-col gap-2 w-full">
           {loading ? (
-            <p>Loading organizers...</p>
-          ) : organizers.length === 0 ? (
-            <p className="text-gray-500">No organizers yet.</p>
+            <p>Loading guests...</p>
+          ) : guests.length === 0 ? (
+            <p className="text-gray-500">No guests yet.</p>
           ) : (
-            organizers.map((o) => (
-              <Card key={o.id}>
+            guests.map((g) => (
+              <Card key={g.id}>
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex flex-col justify-center">
-                    <span className="font-semibold">{o.name}</span>
-                    <span className="text-gray-500 text-sm">{o.utorid}</span>
+                    <span className="font-semibold">{g.name}</span>
+                    <span className="text-gray-500 text-sm">{g.utorid}</span>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleRemoveOrganizer(o.id)}
-                    disabled={loading}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemoveGuest(g.id)}
+                      disabled={loading}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))
           )}
-        </div>
         </div>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remove Organizer</AlertDialogTitle>
+              <AlertDialogTitle>Remove Guest</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to remove this organizer? This action cannot be undone.
+                Are you sure you want to remove this guest? This action cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setOrganizerToDelete(null)}>
+              <AlertDialogCancel onClick={() => setGuestToDelete(null)}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={confirmRemoveOrganizer}
+                onClick={confirmRemoveGuest}
                 className="bg-red-600 hover:bg-red-700"
               >
                 Remove
@@ -177,4 +178,4 @@ export function ManageOrganizersPage({ displayType }) {
   );
 }
 
-export default ManageOrganizersPage;
+export default ManageGuestsPage;

@@ -37,10 +37,20 @@ export const eventAPI = {
   },
 
   // Get all events
-  getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/events`, {
-      headers: getAuthHeaders(),
+  getAll: async (query = {}) => {
+    const params = new URLSearchParams();
+
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        params.append(key, value);
+      }
     });
+
+    const response = await fetch(
+      `${API_BASE_URL}/events?${params.toString()}`,
+      { headers: getAuthHeaders() }
+    );
+
     return handleResponse(response);
   },
 
@@ -102,4 +112,62 @@ export const eventAPI = {
     );
     return handleResponse(response);
   },
+
+  /** ------------------- Guests/RSVPs ------------------- **/
+
+  // Get all guests/RSVPs for an event
+  getGuests: async (eventId) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/guests`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Add a guest (RSVP)
+  addGuest: async (eventId, utorid) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/guests`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ utorid }),
+    });
+    return handleResponse(response);
+  },
+
+  // Remove a guest
+  removeGuest: async (eventId, userId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/events/${eventId}/guests/${userId}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  // Self RSVP
+  rsvpSelf: async (eventId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/events/${eventId}/guests/me`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  // Cancel self RSVP
+  cancelSelfRSVP: async (eventId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/events/${eventId}/guests/me`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      }
+    );
+    return handleResponse(response);
+  },
 };
+
+

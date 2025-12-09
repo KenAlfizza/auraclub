@@ -5,14 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useEvent } from "@/context/EventContext";
+import { useUser } from "@/context/UserContext"; // <-- import UserContext
 import {
-  CalendarPlus,
   Calendar,
   FileText,
   ChevronLeft,
   Users,
   MapPin,
-  Clock,
   Edit,
   Trash2,
   Coins,
@@ -21,43 +20,84 @@ import {
 export function ViewEventPage({ displayType }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { event, fetchEvent, deleteEvent, updateEvent, loading, error } = useEvent();
+  const { user } = useUser(); // <-- get current user
+  const {
+    event,
+    fetchEvent,
+    addGuest,
+    removeGuest,
+    updateEvent,
+    deleteEvent,
+    loading,
+    error,
+  } = useEvent();
 
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showPublishPopup, setShowPublishPopup] = useState(false);
+  const [publishAction, setPublishAction] = useState(null);
+  const [isRSVPed, setIsRSVPed] = useState(false);
+  const [rsvpLoading, setRSVPLoading] = useState(false);
 
   useEffect(() => {
     if (id) fetchEvent(id);
   }, [id]);
 
-  if (!event && !loading) {
-    return (
-      <Layout header sidebar>
-        <div className="text-center mt-16 text-gray-500">Event not found.</div>
-      </Layout>
-    );
-  }
+  useEffect(() => {
+    if (event?.guests && user?.utorid) {
+      setIsRSVPed(event.guests.some((g) => g.utorid === user.utorid));
+    }
+  }, [event, user]);
 
+  // ----- RSVP / Un-RSVP Handlers -----
+  const handleRSVP = async () => {
+    if (!id || !user?.utorid) return;
+    setRSVPLoading(true);
+    try {
+      const guest = await addGuest(id, user.utorid);
+      setIsRSVPed(true);
+      event.guests.push(guest); // optimistic update
+    } catch (err) {
+      console.error("Failed to RSVP:", err);
+    } finally {
+      setRSVPLoading(false);
+    }
+  };
+
+  const handleUnRSVP = async () => {
+    if (!id || !user?.utorid) return;
+    setRSVPLoading(true);
+    try {
+      const guest = event.guests.find((g) => g.utorid === user.utorid);
+      if (!guest) throw new Error("You haven't RSVP'd yet");
+      await removeGuest(id, guest.id);
+      setIsRSVPed(false);
+      event.guests = event.guests.filter((g) => g.id !== guest.id); // optimistic
+    } catch (err) {
+      console.error("Failed to cancel RSVP:", err);
+    } finally {
+      setRSVPLoading(false);
+    }
+  };
+
+  // ----- Delete Event -----
   const confirmDelete = async () => {
     try {
       await deleteEvent(id);
       setShowDeletePopup(false);
-      navigate("/manage/events"); // Go back to events list
-    } catch (err) {
-      // Error is already set in context, StatusBanner will show it
-    }
+      navigate("/manage/events");
+    } catch (err) {}
   };
 
+  // ----- Publish/Unpublish Event -----
   const confirmPublish = async () => {
     if (!publishAction) return;
-
     const newStatus = publishAction === "publish";
-
     await updateEvent(id, { published: newStatus });
-
     setShowPublishPopup(false);
     setPublishAction(null);
   };
 
+  // ----- Render Components -----
   const renderHeader = () => (
     <div className="flex flex-row items-center gap-4">
       <ChevronLeft
@@ -81,47 +121,15 @@ export function ViewEventPage({ displayType }) {
     </div>
   );
 
-   const renderPublishPopup = () => {
-    if (!showPublishPopup) return null;
-    const isPublish = publishAction === "publish";
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-        <Card className="w-80 p-6 shadow-lg">
-          <CardContent className="flex flex-col gap-4">
-            <h3 className="text-lg font-semibold">
-              Confirm {isPublish ? "Publish" : "Unpublish"}
-            </h3>
-            <p className="text-gray-700">
-              Are you sure you want to {isPublish ? "publish" : "unpublish"} this event?
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowPublishPopup(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant={isPublish ? "default" : "destructive"}
-                onClick={confirmPublish}
-              >
-                {isPublish ? "Publish" : "Unpublish"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-
-  const renderDeletePopup = () => {
-    if (!showDeletePopup) return null;
-
-    return (
+  const renderDeletePopup = () =>
+    showDeletePopup && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
         <Card className="w-80 p-6 shadow-lg">
           <CardContent className="flex flex-col gap-4">
             <h3 className="text-lg font-semibold">Confirm Delete</h3>
             <p className="text-gray-700">
-              Are you sure you want to delete this event? This action cannot be undone.
+              Are you sure you want to delete this event? This action cannot be
+              undone.
             </p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowDeletePopup(false)}>
@@ -135,15 +143,43 @@ export function ViewEventPage({ displayType }) {
         </Card>
       </div>
     );
-  };
+
+  const renderPublishPopup = () =>
+    showPublishPopup && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+        <Card className="w-80 p-6 shadow-lg">
+          <CardContent className="flex flex-col gap-4">
+            <h3 className="text-lg font-semibold">
+              Confirm {publishAction === "publish" ? "Publish" : "Unpublish"}
+            </h3>
+            <p className="text-gray-700">
+              Are you sure you want to {publishAction} this event?
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowPublishPopup(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant={publishAction === "publish" ? "default" : "destructive"}
+                onClick={confirmPublish}
+              >
+                {publishAction === "publish" ? "Publish" : "Unpublish"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
 
   const renderEventDetails = () => (
     <>
-      {/* Title + Actions */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
           <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <Calendar size={20} /> {event?.name ?? "Untitled Event"}
+            {event?.name ?? "Untitled Event"}
           </h2>
           <h3 className="text-sm text-gray-500 mt-1 flex items-center gap-1">
             <MapPin size={16} /> {event?.location ?? "No location"}
@@ -167,7 +203,6 @@ export function ViewEventPage({ displayType }) {
         )}
       </div>
 
-      {/* Description */}
       <div>
         <Label className="flex items-center gap-2 text-sm font-semibold">
           <FileText size={16} /> Description
@@ -177,22 +212,19 @@ export function ViewEventPage({ displayType }) {
         </p>
       </div>
 
-      {/* Event Grid Details */}
       <div className="space-y-4">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
             <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Clock size={14} /> Start Time
+              <Calendar size={14} /> Start Time
             </Label>
             <p className="mt-1 text-gray-700">
-              {event?.startTime
-                ? new Date(event.startTime).toLocaleString()
-                : "-"}
+              {event?.startTime ? new Date(event.startTime).toLocaleString() : "-"}
             </p>
           </div>
           <div className="flex-1 min-w-[200px]">
             <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Clock size={14} /> End Time
+              <Calendar size={14} /> End Time
             </Label>
             <p className="mt-1 text-gray-700">
               {event?.endTime ? new Date(event.endTime).toLocaleString() : "-"}
@@ -240,30 +272,34 @@ export function ViewEventPage({ displayType }) {
 
   const renderFooterActions = () => {
     if (displayType === "regular") {
+      const eventEnded = new Date() > new Date(event?.endTime);
+      const eventFull = event?.capacity <= (event?.guests?.length ?? 0);
+
       return (
-        <div className="flex gap-2 mt-4">
-          <Button
-            disabled={
-              event?.capacity <= event?.guestsCount ||
-              new Date() > new Date(event?.endTime)
-            }
-            onClick={() => console.log("RSVP")}
-          >
-            RSVP
-          </Button>
-          <Button
-            disabled={new Date() > new Date(event?.endTime)}
-            onClick={() => console.log("Un-RSVP")}
-          >
-            Un-RSVP
-          </Button>
+        <div className="flex justify-end gap-2 mt-4">
+          {!isRSVPed ? (
+            <Button
+              disabled={eventFull || eventEnded || rsvpLoading}
+              onClick={handleRSVP}
+            >
+              {rsvpLoading ? "RSVPing..." : "RSVP"}
+            </Button>
+          ) : (
+            <Button
+              disabled={eventEnded || rsvpLoading}
+              onClick={handleUnRSVP}
+              variant="destructive"
+            >
+              {rsvpLoading ? "Cancelling..." : "Un-RSVP"}
+            </Button>
+          )}
         </div>
       );
     }
 
     if (displayType === "organizer") {
       return (
-        <div className="flex gap-2 mt-4">
+        <div className="flex justify-end gap-2 mt-4">
           <Button onClick={() => console.log("Add Guest")}>Add Guest</Button>
           <Button onClick={() => console.log("Award Points")}>Award Points</Button>
         </div>
@@ -273,7 +309,12 @@ export function ViewEventPage({ displayType }) {
     if (displayType === "manager") {
       return (
         <div className="flex justify-end gap-2 mt-4">
-          <Button onClick={renderPublishPopup}>
+          <Button
+            onClick={() => {
+              setPublishAction(event?.published ? "unpublish" : "publish");
+              setShowPublishPopup(true);
+            }}
+          >
             {event?.published ? "Unpublish" : "Publish"}
           </Button>
         </div>
@@ -293,6 +334,7 @@ export function ViewEventPage({ displayType }) {
           </CardContent>
         </Card>
         {renderDeletePopup()}
+        {renderPublishPopup()}
       </div>
     </Layout>
   );
@@ -308,7 +350,6 @@ function StatusBanner({ loading, error }) {
           Loading...
         </div>
       )}
-
       {error && (
         <div className="w-full bg-red-100 text-red-700 p-3 rounded-md">{error}</div>
       )}

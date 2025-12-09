@@ -19,6 +19,8 @@ export function EventProvider({ children }) {
     const [events, setEvents] = useState([]);
     const [eventsCount, setEventsCount] = useState(null);
 
+    const [guests, setGuests] = useState([]);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -221,6 +223,108 @@ export function EventProvider({ children }) {
         }
     };
 
+
+    // Fetch guests
+    const fetchGuests = async (eventId) => {
+        setLoading(true);
+        setError("");
+        try {
+            const result = await eventAPI.getGuests(eventId);
+            setGuests(result.guests || []);
+            return result.guests || [];
+        } catch (err) {
+            setError(err.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add a guest
+    const addGuest = async (eventId, utorid) => {
+        setLoading(true);
+        setError("");
+        try {
+            const guest = await eventAPI.addGuest(eventId, utorid);
+            setGuests((prev) => [...prev, guest]);
+            return guest;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Remove a guest
+    const removeGuest = async (eventId, userId) => {
+        setLoading(true);
+        setError("");
+        try {
+            await eventAPI.removeGuest(eventId, userId);
+            setGuests((prev) => prev.filter((g) => g.id !== userId));
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const rsvpSelf = async (eventId) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const guest = await eventAPI.rsvpSelf(eventId);
+
+            // Add to event’s guest list if loaded
+            setGuests((prev) => [...prev, guest]);
+
+            // Update event list (events page)
+            setEvents((prev) =>
+            prev.map((e) =>
+                e.id === eventId
+                ? { ...e, userRSVP: "yes", guestsCount: e.guestsCount + 1 }
+                : e
+            )
+            );
+
+            return guest;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const cancelSelfRSVP = async (eventId) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            await eventAPI.cancelSelfRSVP(eventId);
+
+            // Remove from guests
+            setGuests((prev) => prev.filter((g) => g.eventId !== eventId));
+
+            // Update event list
+            setEvents((prev) =>
+            prev.map((e) =>
+                e.id === eventId
+                ? { ...e, userRSVP: null, guestsCount: e.guestsCount - 1 }
+                : e
+            )
+            );
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <EventContext.Provider
         value={{
@@ -238,6 +342,14 @@ export function EventProvider({ children }) {
             fetchOrganizers,
             addOrganizer,
             removeOrganizer,
+
+            guests,
+            fetchGuests,
+            addGuest,
+            removeGuest,
+
+            rsvpSelf,
+            cancelSelfRSVP,
 
             loading,
             error,

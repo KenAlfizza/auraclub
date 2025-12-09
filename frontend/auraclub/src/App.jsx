@@ -42,8 +42,10 @@ import { ManageEventsPage } from './pages/event/ManageEventsPage'
 import { CreateEventPage } from './pages/event/CreateEventPage'
 import { ViewEventPage } from './pages/event/ViewEventPage'
 import { EventProvider } from './context/EventContext'
-import EditEventPage from './pages/event/EditEventPage'
-import ManageOrganizersPage from './pages/event/ManageOrganizersPage'
+import { EditEventPage } from './pages/event/EditEventPage'
+import { ManageOrganizersPage } from './pages/event/ManageOrganizersPage'
+import { ManageGuestsPage } from './pages/event/ManageGuestsPage'
+import PublishedEventsPage from './pages/event/PublishedEventsPage'
 
 
 function App() {
@@ -85,19 +87,6 @@ function App() {
         }
       />
 
-      <Route 
-        path="/transactions"
-        element={
-            <UserProvider>
-            <TransactionProvider>
-            <MyTransactionsPage />
-            </TransactionProvider>
-            </UserProvider>
-        }
-      />
-
-
-      {/** User points */}
       <Route
         path="/points/redemption/create"
         element={
@@ -109,6 +98,38 @@ function App() {
         }
       />
 
+      <Route 
+        path="/transactions"
+        element={
+            <UserProvider>
+            <TransactionProvider>
+            <MyTransactionsPage />
+            </TransactionProvider>
+            </UserProvider>
+        }
+      />
+
+      <Route 
+        path="/events"
+        element={
+            <UserProvider>
+              <EventProvider>
+                <PublishedEventsPage />
+              </EventProvider>
+            </UserProvider>
+        }
+      />
+
+      <Route
+        path="/events/:id"
+        element={
+          <UserProvider>
+            <EventProvider>
+              <ViewEventPage displayType="regular" />
+            </EventProvider>
+          </UserProvider>
+        }
+      />
 
       {/** Manage Users */}
       <Route 
@@ -304,6 +325,17 @@ function App() {
           <UserProvider>
             <EventProvider>
               <ManageOrganizersPage displayType="manager" />
+            </EventProvider>
+          </UserProvider>
+        }
+      />
+
+      <Route
+        path="/manage/events/:id/guests"
+        element={
+          <UserProvider>
+            <EventProvider>
+              <ManageGuestsPage displayType="manager" />
             </EventProvider>
           </UserProvider>
         }
