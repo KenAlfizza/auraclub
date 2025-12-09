@@ -115,16 +115,20 @@ export function EditEventPage({ displayType }) {
 
   return (
     <Layout header sidebar>
-      <div className="flex flex-col w-full h-full gap-4">
+      <div className="flex flex-col w-full h-full gap-6 mx-auto">
         {/* Header */}
         <div className="flex flex-row items-center gap-4">
-          <ChevronLeft
-            className="hover:cursor-pointer scale-125"
-            onClick={() => navigate("/manage/events")}
-          />
+          <div 
+            className="rounded-full hover:bg-gray-100 p-2 cursor-pointer flex items-center justify-center"
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft className="w-8 h-8 text-gray-700" />
+          </div>
           <div>
-            <Label className="text-3xl font-bold">Edit Event</Label>
-            <p className="text-gray-600 mt-1">Modify event details below</p>
+            <h1 className="text-3xl font-bold text-gray-900">Manage Guests & RSVPs</h1>
+            <p className="text-gray-500 mt-1">
+              Add guests, RSVP users, or mark attendance for this event
+            </p>
           </div>
         </div>
 

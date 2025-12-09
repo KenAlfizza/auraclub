@@ -1,6 +1,6 @@
-// src/context/EventContext.js
 import { createContext, useContext, useState } from "react";
 import { eventAPI } from "../api/event-api";
+import { userAPI } from "../api/user-api";
 
 const EventContext = createContext();
 
@@ -18,124 +18,70 @@ export function EventProvider({ children }) {
 
     const [events, setEvents] = useState([]);
     const [eventsCount, setEventsCount] = useState(null);
-
+    const [organizers, setOrganizers] = useState([]);
     const [guests, setGuests] = useState([]);
-
+    const [rsvps, setRSVPs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Create a single event
-    const createEvent = async (data) => {
+    // Utility: Get user ID from UTORid (optional, for backward compatibility)
+    const resolveUserId = async (utorid) => {
+        try {
+        const user = await userAPI.getByUtorid(utorid);
+        if (!user) throw new Error(`User with UTORid "${utorid}" not found`);
+        return user.id;
+        } catch (err) {
+        throw new Error(err.message || "Failed to resolve utorid");
+        }
+    };
+
+    // Fetch single event by ID
+    const fetchEvent = async (eventId) => {
         setLoading(true);
         setError(null);
-
         try {
-        // Sanitize the data: remove null, undefined, or empty string
-        const sanitizedData = Object.fromEntries(
-            Object.entries(data).filter(
-            ([_, value]) =>
-                value !== null &&
-                value !== undefined &&
-                value !== "" &&
-                value !== "null" &&
-                value !== "undefined"
-            )
-        );
-
-        const result = await eventAPI.create(sanitizedData);
-        console.log("Event created successfully:", result);
-
-        // Reset event form
-        setEvent({
-            name: "",
-            description: "",
-            location: "",
-            startTime: "",
-            endTime: "",
-            capacity: "",
-            totalPoints: "",
-            published: false,
-        });
-
-        return result;
+            const result = await eventAPI.getEvent(eventId);
+            setEvent(result || {});
+            return result || {};
         } catch (err) {
-            setError(err.message || "Failed to create event");
-            throw err;
+            setError(err.message || "Failed to fetch event");
+            return null;
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch a single event
-    const fetchEvent = async (id) => {
+    // Create a new event
+    const createEvent = async (eventData) => {
         setLoading(true);
         setError(null);
         try {
-            const data = await eventAPI.get(id);
-            setEvent(data);
+            const newEvent = await eventAPI.create(eventData);
+            setEvent(newEvent);
+            return newEvent;
         } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchEvents = async (query = {}) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-        // Sanitize query: remove null, undefined, empty string, "null", "undefined"
-        const sanitizedQuery = Object.fromEntries(
-            Object.entries(query).filter(([_, value]) =>
-            value !== null &&
-            value !== undefined &&
-            value !== "" &&
-            value !== "null" &&
-            value !== "undefined"
-            )
-        );
-
-        const data = await eventAPI.getAll(sanitizedQuery);
-            setEvents(data.results || []);
-            setEventsCount(data.count || 0);
-            return data;
-        } catch (err) {
-            setError(err.message || "Failed to fetch events");
-        throw err;
+            console.error(err);
+            setError("Failed to create event");
         } finally {
             setLoading(false);
         }
     };
 
     // Update an event
-    const updateEvent = async (id, updatedData) => {
+    const updateEvent = async (id, data) => {
         setLoading(true);
         setError(null);
-
         try {
-            const sanitizedData = Object.fromEntries(
-                Object.entries(updatedData).filter(
-                    ([_, value]) =>
-                        value !== null &&
-                        value !== undefined &&
-                        value !== "" &&
-                        value !== "null" &&
-                        value !== "undefined"
-                )
-            );
-
-            const result = await eventAPI.update(id, sanitizedData);
-
-            // Update local state if the updated event matches current event
-            if (event?.id === id) {
-                setEvent(prev => ({ ...prev, ...result }));
+            const updated = await eventAPI.update(id, data);
+            // Update local context state if this event is the current one
+            if (event.id === id) {
+                setEvent((prev) => ({ ...prev, ...updated }));
             }
-
-            // Optionally update the events list
-            setEvents(prevEvents => prevEvents.map(e => (e.id === id ? { ...e, ...result } : e)));
-
-            return result;
+            // Update in the events list
+            setEvents((prev) =>
+                prev.map((e) => (e.id === id ? { ...e, ...updated } : e))
+            );
+            return updated;
         } catch (err) {
             setError(err.message || "Failed to update event");
             throw err;
@@ -144,181 +90,237 @@ export function EventProvider({ children }) {
         }
     };
 
-
-     // Delete an event
+    // Delete an event
     const deleteEvent = async (id) => {
         setLoading(true);
         setError(null);
-
         try {
-        await eventAPI.delete(id);
-        setEvent(null); // Clear event after deletion
-        return true;
+            await eventAPI.delete(id);
+
+            // Remove from local events list
+            setEvents((prev) => prev.filter((e) => e.id !== id));
+
+            // Clear current event if it was deleted
+            if (event.id === id) {
+            setEvent({
+                name: "",
+                description: "",
+                location: "",
+                startTime: "",
+                endTime: "",
+                capacity: "",
+                totalPoints: "",
+                published: false,
+            });
+            }
+            return true;
         } catch (err) {
-        if (err.status === 401) {
-            setError("Unauthorized");
-        } else if (err.status === 404) {
-            setError("Event not found");
-        } else {
-            setError(err.message || "An error occurred while deleting the event");
-        }
-        throw err;
+            setError(err.message || "Failed to delete event");
+            throw err;
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
-    /** ----------------- Organizer methods ----------------- **/
-
-    const fetchOrganizers = async (eventId) => {
+    // Fetch all events (with optional filters and pagination)
+    const fetchEvents = async (query = {}) => {
         setLoading(true);
-        setError("");
+        setError(null);
         try {
-            const res = await eventAPI.getOrganizers(eventId);
-            const organizersArray = res.organizers || []; // <-- extract array
-            setEvent((prev) => ({ ...prev, organizers: organizersArray })); 
-            return organizersArray;
+            const result = await eventAPI.getEvents(query);
+            setEvents(result.results || []);
+            setEventsCount(result.count || 0);
+            return result.results || [];
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to fetch events");
             return [];
         } finally {
             setLoading(false);
         }
-    };  
+    };
 
-
-    const addOrganizer = async (eventId, UTORid) => {
+    // Fetch all organizers for an event
+    const fetchOrganizers = async (eventId) => {
         setLoading(true);
-        setError("");
+        setError(null);
         try {
-        const newOrganizer = await eventAPI.addOrganizer(eventId, UTORid);
-        // Update current event's organizers list
-        setEvent((prev) => ({
-            ...prev,
-            organizers: prev?.organizers ? [...prev.organizers, newOrganizer] : [newOrganizer],
-        }));
-        return newOrganizer;
+            const data = await eventAPI.getOrganizers(eventId);
+            setOrganizers(data.organizers || []);
+            return data.organizers;
         } catch (err) {
-        setError(err.message);
-        throw err;
+            console.error(err);
+            setError("Failed to fetch organizers");
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
+    // Add an organizer to an event
+    const addOrganizer = async (eventId, userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const organizer = await eventAPI.addOrganizer(eventId, userId);
+            setOrganizers((prev) => [...prev, organizer]);
+            return organizer;
+        } catch (err) {
+            console.error(err);
+            setError("Failed to add organizer");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Remove an organizer from an event
     const removeOrganizer = async (eventId, userId) => {
         setLoading(true);
-        setError("");
+        setError(null);
         try {
-        await eventAPI.removeOrganizer(eventId, userId);
-        setEvent((prev) => ({
-            ...prev,
-            organizers: prev?.organizers?.filter((o) => o.id !== userId) || [],
-        }));
+            await eventAPI.removeOrganizer(eventId, userId);
+            setOrganizers((prev) => prev.filter((o) => o.id !== userId));
         } catch (err) {
-        setError(err.message);
-        throw err;
+            console.error(err);
+            setError("Failed to remove organizer");
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
-
-    // Fetch guests
+    // Fetch guests for a specific event
     const fetchGuests = async (eventId) => {
         setLoading(true);
-        setError("");
+        setError(null);
         try {
-            const result = await eventAPI.getGuests(eventId);
+            const result = await eventAPI.getGuests(eventId); 
             setGuests(result.guests || []);
             return result.guests || [];
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to fetch guests");
             return [];
         } finally {
             setLoading(false);
         }
     };
 
-    // Add a guest
-    const addGuest = async (eventId, utorid) => {
+    // Add guest (requires userId)
+    const addGuest = async (eventId, userId) => {
         setLoading(true);
-        setError("");
+        setError(null);
         try {
-            const guest = await eventAPI.addGuest(eventId, utorid);
+            const guest = await eventAPI.addGuest(eventId, userId);
             setGuests((prev) => [...prev, guest]);
             return guest;
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to add guest");
             throw err;
         } finally {
             setLoading(false);
         }
     };
 
-    // Remove a guest
+    // Remove guest (requires userId)
     const removeGuest = async (eventId, userId) => {
         setLoading(true);
-        setError("");
+        setError(null);
         try {
             await eventAPI.removeGuest(eventId, userId);
-            setGuests((prev) => prev.filter((g) => g.id !== userId));
+            setGuests((prev) => prev.filter((g) => g.userId !== userId));
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to remove guest");
             throw err;
         } finally {
             setLoading(false);
         }
     };
 
+    // Mark attendance for a guest (requires userId)
+    const markAttendance = async (eventId, userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const updatedGuest = await eventAPI.markAttendance(eventId, userId);
+            setRSVPs((prev) => prev.filter((r) => r.userId !== userId));
+            setGuests((prev) => {
+                const exists = prev.some((g) => g.userId === userId);
+                return exists ? prev : [...prev, updatedGuest];
+            });
+            return updatedGuest;
+        } catch (err) {
+            setError(err.message || "Failed to mark attendance");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch RSVPs for a specific event
+    const fetchRSVPs = async (eventId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const result = await eventAPI.getRSVPs(eventId);
+            setRSVPs(result.rsvps || []);
+            return result.rsvps || [];
+        } catch (err) {
+            setError(err.message || "Failed to fetch RSVPs");
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // RSVP self
     const rsvpSelf = async (eventId) => {
         setLoading(true);
-        setError("");
-
+        setError(null);
         try {
-            const guest = await eventAPI.rsvpSelf(eventId);
-
-            // Add to event’s guest list if loaded
-            setGuests((prev) => [...prev, guest]);
-
-            // Update event list (events page)
-            setEvents((prev) =>
-            prev.map((e) =>
-                e.id === eventId
-                ? { ...e, userRSVP: "yes", guestsCount: e.guestsCount + 1 }
-                : e
-            )
-            );
-
-            return guest;
+            return await eventAPI.rsvpSelf(eventId);
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to RSVP");
             throw err;
         } finally {
             setLoading(false);
         }
     };
 
+    // Cancel self RSVP
     const cancelSelfRSVP = async (eventId) => {
         setLoading(true);
-        setError("");
-
+        setError(null);
         try {
-            await eventAPI.cancelSelfRSVP(eventId);
-
-            // Remove from guests
-            setGuests((prev) => prev.filter((g) => g.eventId !== eventId));
-
-            // Update event list
-            setEvents((prev) =>
-            prev.map((e) =>
-                e.id === eventId
-                ? { ...e, userRSVP: null, guestsCount: e.guestsCount - 1 }
-                : e
-            )
-            );
+            return await eventAPI.cancelSelfRSVP(eventId);
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Failed to cancel RSVP");
+            throw err;
+        } finally {
+            
+        }
+    };
+
+    // RSVP another user (requires userId)
+    const rsvpUser = async (eventId, userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const guest = await eventAPI.rsvpUser(eventId, userId);
+            setRSVPs((prev) => prev.filter((r) => r.userId !== userId));
+            return guest;
+        } catch (err) {
+            setError(err.message || "Failed to RSVP user");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cancel another user's RSVP (requires userId)
+    const cancelUserRSVP = async (eventId, userId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            return await eventAPI.cancelUserRSVP(eventId, userId);
+        } catch (err) {
+            setError(err.message || "Failed to cancel RSVP");
             throw err;
         } finally {
             setLoading(false);
@@ -328,10 +330,12 @@ export function EventProvider({ children }) {
     return (
         <EventContext.Provider
         value={{
+            loading,
+            error,
+
             event,
-            setEvent,
-            createEvent,
             fetchEvent,
+            createEvent,
             updateEvent,
             deleteEvent,
 
@@ -339,6 +343,7 @@ export function EventProvider({ children }) {
             eventsCount,
             fetchEvents,
             
+            organizers,
             fetchOrganizers,
             addOrganizer,
             removeOrganizer,
@@ -348,11 +353,15 @@ export function EventProvider({ children }) {
             addGuest,
             removeGuest,
 
+            rsvps,
+            fetchRSVPs,
             rsvpSelf,
             cancelSelfRSVP,
+            rsvpUser,
+            cancelUserRSVP,
+            markAttendance,
 
-            loading,
-            error,
+            resolveUserId,
         }}
         >
         {children}

@@ -36,26 +36,8 @@ export const eventAPI = {
     return handleResponse(response);
   },
 
-  // Get all events
-  getAll: async (query = {}) => {
-    const params = new URLSearchParams();
-
-    Object.entries(query).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        params.append(key, value);
-      }
-    });
-
-    const response = await fetch(
-      `${API_BASE_URL}/events?${params.toString()}`,
-      { headers: getAuthHeaders() }
-    );
-
-    return handleResponse(response);
-  },
-
   // Get a single event
-  get: async (id) => {
+  getEvent: async (id) => {
     const response = await fetch(`${API_BASE_URL}/events/${id}`, {
       headers: getAuthHeaders(),
     });
@@ -81,7 +63,23 @@ export const eventAPI = {
     return handleResponse(response);
   },
 
-  /** ------------------- Organizers ------------------- **/
+  // Get all events
+  getEvents: async (query = {}) => {
+    const params = new URLSearchParams();
+
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        // Convert value to string
+        params.append(key, value.toString());
+      }
+    });
+
+    const response = await fetch(`${API_BASE_URL}/events?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+
+    return handleResponse(response);
+  },
 
   // Get all organizers for an event
   getOrganizers: async (eventId) => {
@@ -92,11 +90,11 @@ export const eventAPI = {
   },
 
   // Add an organizer to an event
-  addOrganizer: async (eventId, utorid) => {
+  addOrganizer: async (eventId, userId) => {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/organizers`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ utorid }),
+      body: JSON.stringify({ userId }),
     });
     return handleResponse(response);
   },
@@ -113,9 +111,7 @@ export const eventAPI = {
     return handleResponse(response);
   },
 
-  /** ------------------- Guests/RSVPs ------------------- **/
-
-  // Get all guests/RSVPs for an event
+  // Get all guests for an event
   getGuests: async (eventId) => {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/guests`, {
       headers: getAuthHeaders(),
@@ -123,51 +119,78 @@ export const eventAPI = {
     return handleResponse(response);
   },
 
-  // Add a guest (RSVP)
-  addGuest: async (eventId, utorid) => {
+  // Add a guest to an event
+  addGuest: async (eventId, userId) => {
     const response = await fetch(`${API_BASE_URL}/events/${eventId}/guests`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ utorid }),
+      body: JSON.stringify({ userId }),
     });
     return handleResponse(response);
   },
 
-  // Remove a guest
+  // Remove a guest from an event
   removeGuest: async (eventId, userId) => {
-    const response = await fetch(
-      `${API_BASE_URL}/events/${eventId}/guests/${userId}`,
-      {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/guests/${userId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
     return handleResponse(response);
   },
 
-  // Self RSVP
+  // Get all RSVPs for an event
+  getRSVPs: async (eventId) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/rsvps`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Self RSVP for the authenticated user
   rsvpSelf: async (eventId) => {
-    const response = await fetch(
-      `${API_BASE_URL}/events/${eventId}/guests/me`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/rsvps/me`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
     return handleResponse(response);
   },
 
-  // Cancel self RSVP
+  // Cancel self RSVP for the authenticated user
   cancelSelfRSVP: async (eventId) => {
-    const response = await fetch(
-      `${API_BASE_URL}/events/${eventId}/guests/me`,
-      {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/rsvps/me`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // Manager/Organizer RSVP for another user
+  rsvpUser: async (eventId, userId) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/rsvps`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ userId }),
+    });
+    return handleResponse(response);
+  },
+
+  // Cancel RSVP for another user
+  cancelUserRSVP: async (eventId, userId) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/rsvps`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ userId }),
+    });
+    return handleResponse(response);
+  },
+
+  // Mark attendance for a guest
+  markAttendance: async (eventId, userId) => {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/guests`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ userId }),
+    });
     return handleResponse(response);
   },
 };
-
-

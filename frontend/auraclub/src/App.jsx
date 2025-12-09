@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/profile/ProfilePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { MyPromotionsPage } from './pages/profile/MyPromotionsPage'
 import { MyTransactionsPage } from './pages/profile/MyTransactionsPage'
+import { EventsDashboardPage } from './pages/dashboard/EventsDashboardPage'
 
 import { ChangePasswordPage} from './pages/profile/ChangePasswordPage'
 import { ResetPasswordPage} from './pages/profile/ResetPaswordPage'
@@ -114,7 +115,7 @@ function App() {
         element={
             <UserProvider>
               <EventProvider>
-                <PublishedEventsPage />
+                <EventsDashboardPage />
               </EventProvider>
             </UserProvider>
         }

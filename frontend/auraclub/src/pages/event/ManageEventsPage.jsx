@@ -140,8 +140,6 @@ export function ManageEventsPage() {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) return;
-
     try {
       await deleteEvent(eventId);
       // Refetch after deletion

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useEvent } from "@/context/EventContext";
-import { useUser } from "@/context/UserContext"; // <-- import UserContext
+import { useUser } from "@/context/UserContext";
 import {
   Calendar,
   FileText,
@@ -20,14 +20,15 @@ import {
 export function ViewEventPage({ displayType }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useUser(); // <-- get current user
+  const { user } = useUser();
   const {
     event,
     fetchEvent,
-    addGuest,
-    removeGuest,
     updateEvent,
     deleteEvent,
+    guests,
+    rsvpSelf,
+    cancelSelfRSVP,
     loading,
     error,
   } = useEvent();
@@ -42,20 +43,20 @@ export function ViewEventPage({ displayType }) {
     if (id) fetchEvent(id);
   }, [id]);
 
+  // Check if the current user has RSVP'd
   useEffect(() => {
-    if (event?.guests && user?.utorid) {
-      setIsRSVPed(event.guests.some((g) => g.utorid === user.utorid));
+    if (user?.utorid && guests.length > 0) {
+      setIsRSVPed(guests.some((g) => g.utorid === user.utorid));
     }
-  }, [event, user]);
+  }, [guests, user]);
 
   // ----- RSVP / Un-RSVP Handlers -----
   const handleRSVP = async () => {
     if (!id || !user?.utorid) return;
     setRSVPLoading(true);
     try {
-      const guest = await addGuest(id, user.utorid);
+      await rsvpSelf(id)
       setIsRSVPed(true);
-      event.guests.push(guest); // optimistic update
     } catch (err) {
       console.error("Failed to RSVP:", err);
     } finally {
@@ -67,11 +68,10 @@ export function ViewEventPage({ displayType }) {
     if (!id || !user?.utorid) return;
     setRSVPLoading(true);
     try {
-      const guest = event.guests.find((g) => g.utorid === user.utorid);
+      const guest = guests.find((g) => g.userId === user.id);
       if (!guest) throw new Error("You haven't RSVP'd yet");
-      await removeGuest(id, guest.id);
+      await cancelSelfRSVP(id)
       setIsRSVPed(false);
-      event.guests = event.guests.filter((g) => g.id !== guest.id); // optimistic
     } catch (err) {
       console.error("Failed to cancel RSVP:", err);
     } finally {
@@ -85,19 +85,27 @@ export function ViewEventPage({ displayType }) {
       await deleteEvent(id);
       setShowDeletePopup(false);
       navigate("/manage/events");
-    } catch (err) {}
+    } catch (err) {
+      console.error("Failed to delete event:", err);
+    }
   };
 
   // ----- Publish/Unpublish Event -----
   const confirmPublish = async () => {
     if (!publishAction) return;
     const newStatus = publishAction === "publish";
-    await updateEvent(id, { published: newStatus });
-    setShowPublishPopup(false);
-    setPublishAction(null);
+    try {
+      await updateEvent(id, { published: newStatus });
+      await fetchEvent(id);
+    } catch (err) {
+      console.error("Failed to update publish status:", err);
+    } finally {
+      setShowPublishPopup(false);
+      setPublishAction(null);
+    }
   };
 
-  // ----- Render Components -----
+  // ----- Render Helpers -----
   const renderHeader = () => (
     <div className="flex flex-row items-center gap-4">
       <ChevronLeft
@@ -174,106 +182,11 @@ export function ViewEventPage({ displayType }) {
       </div>
     );
 
-  const renderEventDetails = () => (
-    <>
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold flex items-center gap-2">
-            {event?.name ?? "Untitled Event"}
-          </h2>
-          <h3 className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-            <MapPin size={16} /> {event?.location ?? "No location"}
-          </h3>
-        </div>
-
-        {(displayType === "organizer" || displayType === "manager") && (
-          <div className="flex gap-2">
-            <Button onClick={() => navigate(`/manage/events/${id}/edit`)}>
-              <Edit />
-            </Button>
-            {displayType === "manager" && (
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeletePopup(true)}
-              >
-                <Trash2 />
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <Label className="flex items-center gap-2 text-sm font-semibold">
-          <FileText size={16} /> Description
-        </Label>
-        <p className="mt-1 text-gray-700 whitespace-pre-wrap">
-          {event?.description ?? "No description."}
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Calendar size={14} /> Start Time
-            </Label>
-            <p className="mt-1 text-gray-700">
-              {event?.startTime ? new Date(event.startTime).toLocaleString() : "-"}
-            </p>
-          </div>
-          <div className="flex-1 min-w-[200px]">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Calendar size={14} /> End Time
-            </Label>
-            <p className="mt-1 text-gray-700">
-              {event?.endTime ? new Date(event.endTime).toLocaleString() : "-"}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Users size={14} /> Capacity
-            </Label>
-            <p className="mt-1 text-gray-700">{event?.capacity ?? "-"}</p>
-          </div>
-          <div className="flex-1 min-w-[200px]">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Users size={14} /> Organizers / Guests
-            </Label>
-            <p className="mt-1 text-gray-700">
-              {(event?.organizers?.length ?? 0)} organizers ·{" "}
-              {(event?.guests?.length ?? 0)} guests
-            </p>
-          </div>
-        </div>
-
-        {(displayType === "organizer" || displayType === "manager") && (
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <Label className="flex items-center gap-2 text-sm font-semibold">
-                <Coins size={14} /> Points Total
-              </Label>
-              <p className="mt-1 text-gray-700">{event?.pointsTotal ?? "-"}</p>
-            </div>
-            <div className="flex-1 min-w-[200px]">
-              <Label className="flex items-center gap-2 text-sm font-semibold">
-                <Coins size={14} /> Remaining Points
-              </Label>
-              <p className="mt-1 text-gray-700">{event?.pointsRemain ?? "-"}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-
+  // ----- Footer Actions -----
   const renderFooterActions = () => {
     if (displayType === "regular") {
       const eventEnded = new Date() > new Date(event?.endTime);
-      const eventFull = event?.capacity <= (event?.guests?.length ?? 0);
+      const eventFull = event?.capacity <= guests.length;
 
       return (
         <div className="flex justify-end gap-2 mt-4">
@@ -329,7 +242,7 @@ export function ViewEventPage({ displayType }) {
         <StatusBanner loading={loading} error={error} />
         <Card>
           <CardContent className="space-y-6 p-6">
-            {renderEventDetails()}
+            <EventDetails event={event} guests={guests} displayType={displayType} />
             {renderFooterActions()}
           </CardContent>
         </Card>
@@ -340,15 +253,73 @@ export function ViewEventPage({ displayType }) {
   );
 }
 
+function EventDetails({ event, guests, displayType }) {
+  return (
+    <>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold">{event?.name ?? "Untitled Event"}</h2>
+          <h3 className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+            <MapPin size={16} /> {event?.location ?? "No location"}
+          </h3>
+        </div>
+      </div>
+
+      <div>
+        <Label className="flex items-center gap-2 text-sm font-semibold">
+          <FileText size={16} /> Description
+        </Label>
+        <p className="mt-1 text-gray-700 whitespace-pre-wrap">
+          {event?.description ?? "No description."}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-4 mt-4">
+        <div className="flex-1 min-w-[200px]">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            <Calendar size={14} /> Start Time
+          </Label>
+          <p className="mt-1 text-gray-700">
+            {event?.startTime ? new Date(event.startTime).toLocaleString() : "-"}
+          </p>
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            <Calendar size={14} /> End Time
+          </Label>
+          <p className="mt-1 text-gray-700">
+            {event?.endTime ? new Date(event.endTime).toLocaleString() : "-"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4 mt-4">
+        <div className="flex-1 min-w-[200px]">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            <Users size={14} /> Capacity
+          </Label>
+          <p className="mt-1 text-gray-700">{event?.capacity ?? "-"}</p>
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <Label className="flex items-center gap-2 text-sm font-semibold">
+            <Users size={14} /> Organizers / Guests
+          </Label>
+          <p className="mt-1 text-gray-700">
+            {(event?.organizers?.length ?? 0)} organizers · {(guests?.length ?? 0)} guests
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function StatusBanner({ loading, error }) {
   if (!loading && !error) return null;
 
   return (
     <div className="w-full mb-4">
       {loading && (
-        <div className="w-full bg-blue-100 text-blue-700 p-3 rounded-md">
-          Loading...
-        </div>
+        <div className="w-full bg-blue-100 text-blue-700 p-3 rounded-md">Loading...</div>
       )}
       {error && (
         <div className="w-full bg-red-100 text-red-700 p-3 rounded-md">{error}</div>

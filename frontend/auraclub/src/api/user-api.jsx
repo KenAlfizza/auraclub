@@ -98,12 +98,12 @@ export const userAPI = {
 
   getByUtorid: async (utorid) => {
       console.log('userAPI.fetchUserByUtorid called with:', { utorid });
-      const url = `${API_BASE_URL}/users/utorid/${encodeURIComponent(utorid)}`; // <-- new route
+      const url = `${API_BASE_URL}/users/utorid/${encodeURIComponent(utorid)}`;
       console.log('Fetching:', url);
 
       const response = await fetch(url, {
-      method: 'GET',
-      headers: getAuthHeaders(),
+        method: 'GET',
+        headers: getAuthHeaders(),
       });
 
       const data = await handleResponse(response);
