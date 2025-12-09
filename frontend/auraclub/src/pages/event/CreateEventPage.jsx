@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 import { ChevronLeft, MapPin, Users, Award, Clock, CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,8 +37,8 @@ export function CreateEventPage() {
 
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
+  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false);
 
-  // Combine date + time into ISO string
   const getDateTimeISO = (date, time) => {
     if (!date || !time) return null;
     const [hours, minutes] = time.split(":").map(Number);
@@ -67,7 +68,6 @@ export function CreateEventPage() {
 
       setMessage("Event created successfully!");
       setMessageType("success");
-
       setTimeout(() => navigate("/manage/events"), 2000);
     } catch (err) {
       console.error(err);
@@ -83,7 +83,7 @@ export function CreateEventPage() {
         <div className="flex flex-row items-center gap-4">
           <ChevronLeft
             className="hover:cursor-pointer scale-125"
-            onClick={() => navigate("/manage/events")}
+            onClick={() => navigate(-1)}
           />
           <div>
             <Label className="text-3xl font-bold">Create Event</Label>
@@ -256,18 +256,37 @@ export function CreateEventPage() {
                 <Button type="submit" className="bg-[#86D46E] hover:bg-[#75c35d]" disabled={loading}>
                   {loading ? "Creating..." : "Create Event"}
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm("Are you sure you want to discard this event? All data will be lost.")) {
-                      navigate("/manage/events");
-                    }
-                  }}
-                  className="bg-[#D46E6E] hover:bg-[#c35d5d]"
-                  disabled={loading}
-                >
-                  Discard
-                </Button>
+                 <Dialog open={isDiscardDialogOpen} onOpenChange={setIsDiscardDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      className="bg-[#D46E6E] hover:bg-[#c35d5d]"
+                      disabled={loading}
+                    >
+                      Discard
+                    </Button>
+                  </DialogTrigger>
+
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Discard Event?</DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to discard this event? All entered data will be lost.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsDiscardDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        className="bg-[#D46E6E] hover:bg-[#c35d5d]"
+                        onClick={() => navigate(-1)}
+                      >
+                        Discard
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </form>
           </CardContent>

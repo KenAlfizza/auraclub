@@ -193,4 +193,15 @@ export const eventAPI = {
     });
     return handleResponse(response);
   },
+
+  // Award points to a guest
+  awardPoints: async (eventId, payload) => {
+  const response = await fetch(`${API_BASE_URL}/events/${eventId}/transactions`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...payload, type: "event" }), // include type
+    });
+    return handleResponse(response);
+  },
+
 };

@@ -38,14 +38,12 @@ export function EventProvider({ children }) {
     // Fetch single event by ID
     const fetchEvent = async (eventId) => {
         setLoading(true);
-        setError(null);
         try {
-            const result = await eventAPI.getEvent(eventId);
-            setEvent(result || {});
-            return result || {};
+            const event = await eventAPI.getEvent(eventId);
+            console.log("Fetched event:", event); // debug
+            setEvent(event);
         } catch (err) {
-            setError(err.message || "Failed to fetch event");
-            return null;
+            console.error("Failed to fetch event:", err);
         } finally {
             setLoading(false);
         }
@@ -327,6 +325,21 @@ export function EventProvider({ children }) {
         }
     };
 
+    // Award points to a guest
+    const awardPoints = async (eventId, payload) => {
+    setLoading(true);
+    try {
+            await eventAPI.awardPoints(eventId, payload);
+            // refresh event and guest list
+            await fetchEvent(eventId);
+            await fetchGuests(eventId);
+        } catch (err) {
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <EventContext.Provider
         value={{
@@ -360,6 +373,8 @@ export function EventProvider({ children }) {
             rsvpUser,
             cancelUserRSVP,
             markAttendance,
+
+            awardPoints,
 
             resolveUserId,
         }}

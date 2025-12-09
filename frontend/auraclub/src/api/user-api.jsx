@@ -158,4 +158,19 @@ export const userAPI = {
     return data
   },
 
+  delete: async (userId) => {
+    console.log('userAPI.delete called with:', { userId });
+    const url = `${API_BASE_URL}/users/${userId}`;
+    console.log('Deleting user at:', url);
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    const data = await handleResponse(response);
+    console.log('User deletion complete:', data);
+    return data;
+  }
+
 }

@@ -103,12 +103,6 @@ export function EditUserPage() {
 
             console.log('Updated data:', data);
 
-            
-            
-            // TODO: Add your API call here to update the user
-            // await updateUser(id, { email, verified, suspicious, role });
-            // navigate('/manage/users/all');
-
             await patchUser(id, data)
             navigate('/manage/users/all')
 

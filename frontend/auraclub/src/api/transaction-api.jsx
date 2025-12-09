@@ -195,5 +195,32 @@ export const transactionAPI = {
         return handleResponse(response);
     },
 
+    // Get pending redemptions
+    getPendingRedemptions: async () => {
+        const response = await fetch(`${API_BASE_URL}/transactions/redemptions/pending`, {
+        headers: getAuthHeaders(),
+        });
+        return handleResponse(response);
+    },
+
+    // Fetch transactions created OR processed by the cashier
+    getCashierTransactions: async (query = {}) => {
+        const params = new URLSearchParams(query).toString();
+        const url = `${API_BASE_URL}/transactions/cashier${params ? `?${params}` : ""}`;
+        const response = await fetch(url, {
+            method: "GET",
+            headers: getAuthHeaders(),
+        });
+        return await handleResponse(response); // expects { count, results }
+    },
+
+    getCashierTransactionStats: async () => {
+        const url = `${API_BASE_URL}/transactions/cashier/stats`;
+        const response = await fetch(url, {
+            headers: getAuthHeaders()
+        });
+        const data = await handleResponse(response)
+        return data;
+    },
 }
 

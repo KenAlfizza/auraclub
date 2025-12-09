@@ -41,7 +41,6 @@ export default function AppManageEventCard({
   pointsAwarded,
   published,
   organizersCount,
-  guestsCount,
   onDelete, // keep same delete logic
 }) {
   const navigate = useNavigate();
@@ -50,8 +49,6 @@ export default function AppManageEventCard({
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [showPublishPopup, setShowPublishPopup] = useState(false);
   const [publishAction, setPublishAction] = useState(null); // "publish" | "unpublish"
-
-  const isEventFull = guestsCount >= capacity;
 
   const formatDate = (date) => {
     try {
@@ -126,12 +123,10 @@ export default function AppManageEventCard({
                 </Badge>
               ) : (
                 <Badge variant="secondary" className="bg-gray-200">
-                  <XCircle className="w-3 h-3 mr-1" />
+                  <Edit className="w-3 h-3 mr-1" />
                   Draft
                 </Badge>
               )}
-
-              {isEventFull && <Badge variant="destructive">Full</Badge>}
             </div>
 
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -149,7 +144,7 @@ export default function AppManageEventCard({
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Users className="w-4 h-4" />
               <span>
-                {guestsCount}/{capacity} guests
+                {capacity} guests
               </span>
             </div>
 
@@ -192,13 +187,16 @@ export default function AppManageEventCard({
 
               <DropdownMenuSeparator />
 
-              {/* KEEP THESE AS REQUESTED */}
               <DropdownMenuItem onClick={() => navigate(`/manage/events/${id}/organizers`)}>
                 <Users className="mr-2 h-4 w-4" /> Manage Organizers
               </DropdownMenuItem>
 
               <DropdownMenuItem onClick={() => navigate(`/manage/events/${id}/guests`)}>
                 <UserPlus className="mr-2 h-4 w-4" /> Manage Guests
+              </DropdownMenuItem>
+
+              <DropdownMenuItem onClick={() => navigate(`/manage/events/${id}/awards`)}>
+                <Coins className="mr-2 h-4 w-4 text-yellow-500" /> Award Points
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />

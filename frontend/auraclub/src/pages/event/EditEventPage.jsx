@@ -97,7 +97,7 @@ export function EditEventPage({ displayType }) {
       setMessage("Event updated successfully!");
       setMessageType("success");
 
-      setTimeout(() => navigate("/manage/events"), 1500);
+      setTimeout(() => navigate(-1), 1500);
     } catch (err) {
       console.error(err);
       setMessage(err.message || "Failed to update event. Please try again.");
@@ -296,7 +296,7 @@ export function EditEventPage({ displayType }) {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => navigate("/manage/events")}
+                  onClick={() => navigate(-1)}
                   className="bg-[#D46E6E] hover:bg-[#c35d5d]"
                   disabled={loading}
                 >

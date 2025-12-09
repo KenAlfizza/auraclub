@@ -1,120 +1,126 @@
-import { useNavigate } from "react-router-dom"
-import { useState } from "react"
-import { useUser } from "@/context/UserContext"
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useUser } from "@/context/UserContext";
 
-import Layout from "../Layout"
-
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { UserPlus2 } from "lucide-react"
+import Layout from "../Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { UserPlus2, ChevronLeft } from "lucide-react";
 
 export function RegisterUserPage() {
-    const navigate = useNavigate()
+  const navigate = useNavigate();
+  const { register, loading, error } = useUser();
 
-    const {register, loading, error} = useUser()
+  const [utorid, setUtorid] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [registerError, setRegisterError] = useState("");
 
-    const [utorid, setUtorid] = useState('')
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setRegisterError("");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setRegisterError('')
-
-        console.log('Form submitted!')
-        
-        // Basic validation
-        if (!utorid || !name || !email) {
-            setRegisterError('Please fill in all fields')
-            return
-        }
-
-        try {
-            await register(utorid, name, email)
-            // Register successful, redirect to profile
-            navigate('/profile')
-        } catch (err) {
-            setRegisterError(err.message || 'Register failed. Please check the credentials.')
-        }
+    if (!utorid || !name || !email) {
+      setRegisterError("Please fill in all fields");
+      return;
     }
 
-    return (
-    <Layout header={true} sidebar={true}>
-        <Card className="w-full max-w-md">
-        <CardHeader>
-            <div className="flex items-center justify-center gap-2">
-                <UserPlus2/>
-                <CardTitle className="text-2xl text-center">Register User</CardTitle>
+    try {
+      await register(utorid, name, email);
+      navigate("/manage/users");
+    } catch (err) {
+      setRegisterError(err.message || "Register failed. Please check the credentials.");
+    }
+  };
+
+  return (
+    <Layout header sidebar>
+      <div className="flex flex-col w-full h-full gap-4 p-2">
+        {/* Header */}
+        <div className="flex items-center gap-2">
+             <div 
+                className="rounded-full hover:bg-gray-100 p-2 cursor-pointer flex items-center justify-center"
+                onClick={() => navigate(-1)}
+            >
+                <ChevronLeft className="w-8 h-8 text-gray-700" />
             </div>
-            <CardDescription className="text-center">
-                Enter UTORID, name, and email below
-            </CardDescription>
-        </CardHeader>
-        <CardContent>         
-            <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                    <Label htmlFor="utorid">UTORID</Label>
-                    <Input
-                        id="utorid"
-                        type="utorid"
-                        placeholder="johndoe1"
-                        onChange={(e) => {
-                            console.log('Utorid changed:', e.target.value)
-                            setUtorid(e.target.value)
-                        }}
-                        disabled={loading}
-                        required
-                    />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                        id="name"
-                        type="name"
-                        placeholder="John Doe"
-                        onChange={(e) => {
-                            console.log('Name changed:', e.target.value)
-                            setName(e.target.value)
-                        }}
-                        disabled={loading}
-                        required
-                    />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="johndoe1@mail.utoronto.ca"
-                        onChange={(e) => {
-                            console.log('Email changed:', e.target.value)
-                            setEmail(e.target.value)
-                        }}
-                        disabled={loading}
-                        required
-                    />
-                </div>
-                <div className="flex justify-end">
-                    <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200" type="submit">
-                        Register
-                    </Button>
-                </div>
-                </div>
+          <div>
+            <Label className="text-3xl font-bold flex items-center gap-2">
+              <UserPlus2 className="h-6 w-6" />
+              Register User
+            </Label>
+            <p className="text-gray-600 mt-1">
+              Fill in the details below to register a new user
+            </p>
+          </div>
+        </div>
+
+        {/* Registration Form */}
+        <Card className="w-full mx-auto rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-8">
+            {/* Error Messages */}
+            {(registerError || error) && (
+              <Badge variant="destructive" className="mb-6 w-full text-center">
+                {registerError || error}
+              </Badge>
+            )}
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="utorid">UTORID</Label>
+                <Input
+                  id="utorid"
+                  placeholder="johndoe1"
+                  value={utorid}
+                  onChange={(e) => setUtorid(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="johndoe1@mail.utoronto.ca"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <Button
+                  type="submit"
+                  className="bg-green-500 text-white hover:bg-blue-600 transition-colors duration-200"
+                  disabled={loading}
+                >
+                  {loading ? "Registering..." : "Register"}
+                </Button>
+              </div>
             </form>
-        </CardContent>
+          </CardContent>
         </Card>
+      </div>
     </Layout>
-  )
+  );
 }
 
-export default RegisterUserPage
+export default RegisterUserPage;

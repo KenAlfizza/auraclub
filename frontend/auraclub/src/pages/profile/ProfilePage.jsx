@@ -1,116 +1,107 @@
 import { useNavigate } from "react-router-dom";
-
+import { BadgeCheck, Shield } from "lucide-react";
 import Layout from "../Layout";
-import { Header } from "@/components/app/appHeader";
-import { Label } from "@/components/ui/label";
 import { useUser } from "@/context/UserContext";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-
-import {
-  Card,
-  CardTitle,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card"
+import { Card, CardTitle, CardContent, CardHeader } from "@/components/ui/card";
+import { format } from "date-fns";
 
 export function ProfilePage() {
-    const { user } = useUser()
-    const navigate = useNavigate();
+  const { user } = useUser();
+  const navigate = useNavigate();
 
-    // Handle loading or no user state
-    if (!user) {
-        return (
-            <Layout header={<Header />}>
-                <div>Loading...</div>
-            </Layout>
-        )
-    }
-
+  if (!user) {
     return (
-        <Layout header={true} sidebar={true}>
-            <div className="flex-row w-full max-w-xl">
-                <div className="mb-2">
-                    <Card className="flex-col justify-center">
-                        <CardHeader className="text-center">
-                            <CardTitle>My Profile</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex gap-8">
-                            <div>
-                                <img src="\src\assets\react.svg" className="w-32"/>
-                            </div>
-                            <div className="flex flex-row gap-8">
-                                <div className="flex-1 flex-col gap-8">
-                                    <div>
-                                        <Label htmlFor="utorid">UTORID</Label>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="name">Name</Label>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="email">Email</Label>
-                                    </div>
-
-                                    <div>
-                                        <Label htmlFor="birthday">Birthday</Label>
-                                    </div>
-                                </div>
-                                <div className="flex-1 flex-col gap-8">
-                                    <div>{user.utorid}</div>
-                                    <div>{user.name}</div>
-                                    <div>{user.email}</div>
-                                    <div>{user.birthday}</div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="flex gap-2">
-                    <Card className="w-full max-w-xl flex-col justify-center">
-                        <CardHeader className="text-center">
-                            <CardTitle>My Role</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex justify-center">
-                            <div>
-                                <Label className="text-3xl" htmlFor="role">{user.role}</Label>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="w-full max-w-xl flex-col justify-center">
-                        <CardHeader className="text-center">
-                            <CardTitle>Security</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-col justify-center gap-2">
-                            <div>
-                                <div>
-                                    <Label htmlFor="verified">Verified: {user.verified ? "Yes" : "No"}</Label>
-                                </div>
-                                <div>
-                                    <Label htmlFor="createdat">Created At: {String(user.createdAt).split('T')[0]}</Label>
-                                </div>
-                                <div>
-                                    <Label htmlFor="lastlogin">Last Login: {String(user.lastLogin).split('T')[0]}</Label>
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <Button 
-                                    variant="outline"
-                                    className="bg-white hover:bg-blue-400 hover:text-white hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
-                                    onClick={() => navigate("/change-password")}
-                                >
-                                    Change Password
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </Layout>
+      <Layout>
+        <div>Loading...</div>
+      </Layout>
     );
+  }
+
+  return (
+    <Layout header={true} sidebar={true}>
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+
+        {/* PROFILE CARD */}
+        <Card className="p-6 text-center">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-semibold">My Profile</CardTitle>
+          </CardHeader>
+
+          <CardContent className="flex flex-col items-center gap-4">
+            <img
+              src="/src/assets/react.svg"
+              className="w-32 h-32 rounded-full shadow-sm border"
+            />
+            <span className="text-sm text-gray-600">{user.email}</span>
+            <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-600 font-medium">
+              {user.role.toUpperCase()}
+            </span>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-4 w-full max-w-md text-left">
+              <div><Label>UTORID</Label><div>{user.utorid}</div></div>
+              <div><Label>Full Name</Label><div>{user.name}</div></div>
+              <div><Label>Birthday</Label><div>
+                {user.birthday ? user.birthday.split("T")[0] : "N/A"}
+              </div></div>
+              <div><Label>Verified</Label><div className={user.verified ? "text-green-600" : "text-red-600"}>{user.verified ? "Yes" : "No"}</div></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ROLE + SECURITY CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* ROLE CARD */}
+          <Card className="p-6">
+            <CardHeader className="text-center">
+              <CardTitle className="flex justify-center items-center gap-2">
+                <Shield className="w-5 h-5" />
+                My Role
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <span className="text-2xl font-semibold capitalize">{user.role}</span>
+            </CardContent>
+          </Card>
+
+          {/* SECURITY CARD */}
+          <Card className="p-6">
+            <CardHeader className="text-center">
+              <CardTitle className="flex justify-center items-center gap-2">
+                <BadgeCheck className="w-5 h-5" />
+                Security
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-center">
+              <div className="flex justify-between px-6">
+                <Label className="font-medium">Created At</Label>
+                <span>{String(user.createdAt).split("T")[0]}</span>
+              </div>
+              <div className="flex justify-between px-6">
+                <Label className="font-medium">Last Login</Label>
+                <span>{String(user.lastLogin).split("T")[0]}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+        </div>
+
+        {/* CHANGE PASSWORD BUTTON */}
+        <div className="flex justify-center mt-4">
+          <Button
+            variant="outline"
+            className="w-1/2 bg-white hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all shadow-sm hover:shadow-md"
+            onClick={() => navigate("/change-password")}
+          >
+            Change Password
+          </Button>
+        </div>
+
+      </div>
+    </Layout>
+  );
 }
 
-export default ProfilePage
+export default ProfilePage;

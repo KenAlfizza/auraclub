@@ -9,10 +9,14 @@ import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
+// Import the SVG QR Code component
+import { QRCodeSVG } from "qrcode.react";
+// Alternatively, if you prefer react-qr-code:
+// import QRCode from "react-qr-code";
 
 export function CreateTransferTransactionPage() {
   const navigate = useNavigate();
-  const { fetchUserByUtorid, transferPoints, user, loading } = useUser(); // <-- use new function
+  const { fetchUserByUtorid, transferPoints, user, loading } = useUser();
 
   const [recipientUTORID, setRecipientUTORID] = useState("");
   const [amount, setAmount] = useState("");
@@ -40,24 +44,24 @@ export function CreateTransferTransactionPage() {
     }
 
     try {
-      // Fetch recipient user by UTORID
       const recipientData = await fetchUserByUtorid(recipientUTORID.trim());
-
-      // Call transferPoints with recipient numeric ID
       const response = await transferPoints(recipientData.id, {
         type: "transfer",
         amount: transferAmount,
         remark: remark || "",
       });
 
-      setTransferSubmitted({ ...response, recipient: recipientData, sender: user, });
+      setTransferSubmitted({
+        ...response,
+        recipient: recipientData,
+        sender: user,
+      });
     } catch (err) {
       setMessage(err.message || "Failed to create transfer transaction.");
       setMessageType("error");
     }
   };
 
-  // Success page
   if (transferSubmitted) {
     return (
       <Layout header sidebar>
@@ -65,7 +69,7 @@ export function CreateTransferTransactionPage() {
           <div className="flex flex-row items-center gap-4">
             <ChevronLeft
               className="hover:cursor-pointer scale-125"
-              onClick={() => navigate("/points")}
+              onClick={() => navigate("/dashboard")}
             />
             <Label className="text-2xl">Transfer Points Successful</Label>
           </div>
@@ -97,7 +101,7 @@ export function CreateTransferTransactionPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Created At</p>
-                    <p className="font-semibold">
+                    <p className="text-sm font-semibold">
                       {transferSubmitted.createdAt
                         ? format(new Date(transferSubmitted.createdAt), "MM/dd/yyyy h:mma")
                         : "—"}
@@ -112,7 +116,6 @@ export function CreateTransferTransactionPage() {
     );
   }
 
-  // Main form
   return (
     <Layout header sidebar>
       <div className="flex flex-col w-full h-full gap-4">
@@ -124,6 +127,19 @@ export function CreateTransferTransactionPage() {
           <Label className="text-2xl">Transfer Points</Label>
         </div>
 
+        {/* QR Code for user identification */}
+        <Card className="w-full">
+          <CardContent className="flex flex-col items-center gap-4">
+            <Label className="text-lg">Your User QR Code</Label>
+            {user ? (
+              <QRCodeSVG value={user.id.toString()} width={180} height={180} />
+            ) : (
+              <p>Loading QR Code...</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Transfer form */}
         <Card className="w-full pt-4">
           <CardContent>
             {message && (
@@ -135,7 +151,6 @@ export function CreateTransferTransactionPage() {
             )}
 
             <div className="flex flex-col gap-4 mt-4">
-              {/* Recipient */}
               <div>
                 <Label htmlFor="recipient">Recipient UTORID</Label>
                 <Input
@@ -146,7 +161,6 @@ export function CreateTransferTransactionPage() {
                 />
               </div>
 
-              {/* Amount */}
               <div>
                 <Label htmlFor="amount">Amount</Label>
                 <Input
@@ -159,7 +173,6 @@ export function CreateTransferTransactionPage() {
                 />
               </div>
 
-              {/* Remark */}
               <div>
                 <Label htmlFor="remark">Remark (Optional)</Label>
                 <Input
@@ -169,7 +182,6 @@ export function CreateTransferTransactionPage() {
                 />
               </div>
 
-              {/* Buttons */}
               <div className="flex flex-row gap-2 justify-end">
                 <Button
                   type="button"
@@ -189,6 +201,7 @@ export function CreateTransferTransactionPage() {
                 </Button>
               </div>
             </div>
+
           </CardContent>
         </Card>
       </div>

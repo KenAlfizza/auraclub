@@ -15,102 +15,102 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { LogIn } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function LoginPage() {
-    const navigate = useNavigate()
-    const { login, loading, error } = useUser()
-    
-    const [utorid, setUtorid] = useState('')
-    const [password, setPassword] = useState('')
-    const [loginError, setLoginError] = useState('')
+  const navigate = useNavigate()
+  const { login, loading } = useUser()
+  
+  const [utorid, setUtorid] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setLoginError('')
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoginError('')
 
-        console.log('Form submitted!')
-        console.log('Utorid:', utorid)
-        console.log('Password:', password)
-        
-        // Basic validation
-        if (!utorid || !password) {
-        setLoginError('Please fill in all fields')
-        return
-        }
-
-        try {
-        const data = await login(utorid, password)
-        // Login successful, redirect to profile
-        navigate('/dashboard')
-        } catch (err) {
-            setLoginError(err.message || 'Login failed. Please check your credentials.')
-        }
+    // Basic validation
+    if (!utorid || !password) {
+      setLoginError('Please fill in all fields')
+      return
     }
-    
-    return (
-        <Layout>
-        <div className="flex flex-col w-full items-center gap-4">
-            <img src="/src/assets/auraclub_logo.svg" className="block mx-auto scale-75" />
+
+    try {
+      await login(utorid, password)
+      // Login successful, redirect to dashboard
+      navigate('/dashboard')
+    } catch (err) {
+      setLoginError('Incorrect UTORID or password. Please try again.')
+    }
+  }
+
+  return (
+    <Layout>
+      <div className="flex flex-col w-full items-center gap-4">
+        <img src="/src/assets/auraclub_logo.svg" className="block mx-auto scale-75" />
+
         <Card className="w-full max-w-md">
-        <CardHeader>
+          <CardHeader>
             <div className="flex items-center justify-center gap-2">
-                <LogIn/>
-                <CardTitle className="text-2xl text-center">Login</CardTitle>
+              <LogIn/>
+              <CardTitle className="text-2xl text-center">Login</CardTitle>
             </div>
             <CardDescription className="text-center">
-                Enter your UTORID and password below
+              Enter your UTORID and password below
             </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+
+          <CardContent>
+            {/* Error message display */}
+            {loginError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{loginError}</AlertDescription>
+              </Alert>
+            )}
+
             <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 <div className="grid gap-2">
-                <Label htmlFor="utorid">UTORID</Label>
-                <Input
+                  <Label htmlFor="utorid">UTORID</Label>
+                  <Input
                     id="utorid"
-                    type="utorid"
+                    type="text"
                     placeholder="johndoe1"
                     value={utorid}
-                    onChange={(e) => {
-                        console.log('Utorid changed:', e.target.value)
-                        setUtorid(e.target.value)
-                    }}
+                    onChange={(e) => setUtorid(e.target.value)}
                     disabled={loading}
                     required
-                />
+                  />
                 </div>
-                <div className="grid gap-2">
-                <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                    <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                    >
-                    Forgot password?
-                    </a>
-                </div>
-                <Input 
-                    id="password" 
-                    type="password" 
-                    onChange={(e) => {
-                    console.log('Password changed')
-                    setPassword(e.target.value)
-                    }}
-                    disabled={loading}
-                    required 
-                />
-                </div>
-            </div>
-            <div className="flex justify-end">
-                <Button className="bg-blue-400 text-[#FFFFFF] hover:bg-blue-500 hover:text-white transition-colors duration-200" type="submit">
-                    Login
-                </Button>
-            </div>
 
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  className="bg-blue-400 text-white hover:bg-blue-500 transition-colors duration-200"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? "Logging in..." : "Login"}
+                </Button>
+              </div>
             </form>
-        </CardContent>
+          </CardContent>
         </Card>
-        </div>
+      </div>
     </Layout>
   )
 }

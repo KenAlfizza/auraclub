@@ -1,4 +1,4 @@
-import Layout from "./Layout"
+import Layout from "../../Layout"
 import Header from "@/components/app/appHeader"
 import { useUser } from "@/context/UserContext"
 import { useState } from "react"

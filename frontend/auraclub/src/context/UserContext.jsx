@@ -1,13 +1,24 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { userAPI } from '../api/user-api'
 
-const UserContext = createContext()
+export const UserContext = createContext();
 
 export function UserProvider({ children }) {
     // Single user object state (logged-in user)
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
+
+    const [isLoading, setIsLoading] = useState(true);
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+
+        if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        }
+
+        setIsLoading(false);
+    }, []);
 
     // Login
     const login = async (utorid, password) => {
@@ -208,6 +219,24 @@ export function UserProvider({ children }) {
         }
     };
 
+    // Deletes a user
+    const deleteUser = async (userId) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await userAPI.delete(userId);
+            console.log('User deleted:', data);
+            return data;
+        } catch (err) {
+            console.error('Failed to delete user:', err);
+            setError(err.message || 'Failed to delete user');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     // Public interface
     const value = {
@@ -224,6 +253,7 @@ export function UserProvider({ children }) {
         fetchUser,
         fetchUserByUtorid,
         patchUser,
+        deleteUser,
 
         lookupUserPromotions,
 

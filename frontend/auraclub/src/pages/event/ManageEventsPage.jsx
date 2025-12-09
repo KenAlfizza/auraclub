@@ -169,7 +169,7 @@ export function ManageEventsPage() {
 
   return (
     <Layout header sidebar>
-      <div className="flex flex-col w-full h-full gap-4">
+      <div className="flex flex-col w-full h-full gap-4 p-4">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -312,7 +312,7 @@ export function ManageEventsPage() {
               </DialogContent>
             </Dialog>
 
-            <Button onClick={() => navigate("/manage/events/create")} className="gap-2">
+            <Button onClick={() => navigate("/manage/events/create")} className="gap-2 bg-green-500">
               <Plus className="h-4 w-4" />
               Create Event
             </Button>
@@ -350,7 +350,7 @@ export function ManageEventsPage() {
             <Card>
               <CardContent className="p-8 text-center">
                 <p className="text-gray-500">No events found</p>
-                <Button onClick={() => navigate("/manage/events/create")} className="mt-4" variant="outline">
+                <Button onClick={() => navigate("/manage/events/create")} className="mt-4 bg-green-500" variant="outline">
                   Create your first event
                 </Button>
               </CardContent>

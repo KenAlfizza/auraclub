@@ -146,7 +146,7 @@ export function CreatePurchaseTransactionPage() {
           <div className="flex flex-row items-center gap-4">
             <ChevronLeft
               className="hover:cursor-pointer scale-125"
-              onClick={() => navigate("/manage/transactions")}
+              onClick={() => navigate(-1)}
             />
             <Label className="text-2xl">Purchase Transaction Created</Label>
           </div>
@@ -201,7 +201,7 @@ export function CreatePurchaseTransactionPage() {
         <div className="flex flex-row items-center gap-4">
           <ChevronLeft
             className="hover:cursor-pointer scale-125"
-            onClick={() => navigate("/manage/transactions")}
+            onClick={() => navigate(-1)}
           />
           <Label className="text-2xl">Create Purchase Transaction</Label>
         </div>

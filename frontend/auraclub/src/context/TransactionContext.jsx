@@ -8,6 +8,12 @@ export function TransactionProvider({ children }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const [pendingRedemptions, setPendingRedemptions] = useState()
+
+    const [cashierTransactions, setCashierTransactions] = useState([]);
+    const [cashierTotalCount, setCashierTotalCount] = useState(0);
+    const [cashierStats, setCashierStats] = useState(null)
+
     // Function to create/register a purchase transaction
     const createPurchaseTransaction = async () => {
         setLoading(true);
@@ -230,7 +236,53 @@ export function TransactionProvider({ children }) {
     }
     };
 
+    const fetchPendingRedemptions = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await transactionAPI.getPendingRedemptions();
+            setPendingRedemptions(data);
+        } catch (err) {
+        console.error("Failed to fetch pending redemptions", err);
+            setError(err.message);
+            setPendingRedemptions([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    // Fetch transactions created or processed by the cashier
+    const fetchCashierTransactions = async (query = {}) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await transactionAPI.getCashierTransactions(query);
+            setCashierTransactions(data.results); // store results in state
+            return data;
+        } catch (err) {
+            setError(err.message || "Failed to fetch cashier transactions");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch cashier dashboard statistics
+    const fetchCashierStats = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await transactionAPI.getCashierTransactionStats();
+            setCashierStats(data);
+            return data;
+        } catch (err) {
+            setError(err.message || "Failed to fetch cashier dashboard stats");
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <TransactionContext.Provider
@@ -246,8 +298,17 @@ export function TransactionProvider({ children }) {
                 fetchRedemptionDetails,
                 createPurchaseTransaction,
                 createAdjustmentTransaction,
+                
+                pendingRedemptions,
+                fetchPendingRedemptions,
                 createRedemptionTransaction,
                 processRedemption,
+
+                cashierTransactions,
+                cashierTotalCount,
+                fetchCashierTransactions,
+                cashierStats,
+                fetchCashierStats,
 
                 setSuspicious,
             }}
